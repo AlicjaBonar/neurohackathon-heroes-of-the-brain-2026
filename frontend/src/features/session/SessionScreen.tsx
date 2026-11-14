@@ -166,6 +166,7 @@ export function SessionScreen({
             scoreLabel={isPaced ? "RHYTHM MATCH" : "RESONANCE"}
             score={score}
             stage={frame ? STAGE_LABELS[frame.breath.stage] : ""}
+            hb={frame?.hb}
             footer={
               <>
                 <span className={cx("status-dot", state.quality?.ready ? "ok" : "wait")} />

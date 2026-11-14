@@ -27,12 +27,19 @@ export type SignalSample = {
   target: number | null;
   hbo: number;
   hbr: number;
+  /** HbO/HbR without the cardiac pulse (breathing, Mayer waves, slow drift). */
+  hboTrend: number | null;
+  hbrTrend: number | null;
+  /** Same four values for the strongest single channel (null if the source has none). */
+  best: { hbo: number; hbr: number; hboTrend: number | null; hbrTrend: number | null } | null;
   /** Instantaneous heart rate from the last inter-beat interval [bpm]. */
   hr: number | null;
   /** Movement level 0..1 (accelerometer). */
   motion: number;
   /** Latest phase-lock 0..1 (vitals, 1 Hz; held between updates). */
   lock: number | null;
+  /** First sample of a new phase: a replay switches to another recording here, so lines break. */
+  gap?: boolean;
 };
 
 export type LiveState = {
@@ -149,6 +156,16 @@ export function useLiveSession({
             target,
             hbo: msg.hb.hbo_uM,
             hbr: msg.hb.hbr_uM,
+            hboTrend: msg.hb.hbo_trend_uM ?? null,
+            hbrTrend: msg.hb.hbr_trend_uM ?? null,
+            best: msg.hb.best
+              ? {
+                  hbo: msg.hb.best.hbo_uM,
+                  hbr: msg.hb.best.hbr_uM,
+                  hboTrend: msg.hb.best.hbo_trend_uM ?? null,
+                  hbrTrend: msg.hb.best.hbr_trend_uM ?? null,
+                }
+              : null,
             hr: msg.hr_instant ?? null,
             motion: msg.motion.level,
             lock: lockRef.current,
@@ -205,6 +222,10 @@ export function useLiveSession({
           break;
         case "phase":
           if (msg.state === "started") {
+            // The server sends a tick's frame before its phase message, so the frame already received
+            // is the first one of the new phase (a replay switches recordings there): break the line at it.
+            const buf = samplesRef.current;
+            if (buf.length) samplesRef.current = [...buf.slice(0, -1), { ...buf[buf.length - 1], gap: true }];
             phaseName = msg.phase;
             pacedNow = false;
             lockRef.current = null;

@@ -120,6 +120,10 @@ class Prepared:
         hbo, hbr = H.hbo, H.hbr
         hbo_m = S.bandpass(hbo[:, good], fs, 0.005, 0.5).mean(1)
         hbr_m = S.bandpass(hbr[:, good], fs, 0.005, 0.5).mean(1)
+        # Live display keeps the cardiac pulse (~1 Hz), like the device's own viewer; metrics use the
+        # 0.5 Hz versions above. 2.5 Hz stays below the 5 Hz Nyquist of the 10 Hz frame grid.
+        hbo_live = S.bandpass(hbo[:, good], fs, 0.005, 2.5).mean(1)
+        hbr_live = S.bandpass(hbr[:, good], fs, 0.005, 2.5).mean(1)
         breath = S.bandpass(hbo[:, good], fs, 0.05, 0.6).mean(1)
         slow = S.bandpass(hbo[:, good], fs, 0.005, 0.6).mean(1)     # for spectra (resonance, resp rate)
 
@@ -142,12 +146,25 @@ class Prepared:
         self.t = np.arange(0, self.duration, 1 / FS_OUT)
         rs = lambda x: np.interp(self.t, t_in, x)  # noqa: E731
         self.hbo, self.hbr, self.slow, self.motion = rs(hbo_m), rs(hbr_m), rs(slow), rs(motion)
+        self.hbo_live, self.hbr_live = rs(hbo_live), rs(hbr_live)
         b = rs(breath)
         self.breath = b / (np.std(b) + 1e-12)
         theta = np.angle(ss.hilbert(self.breath))           # HbO minimum -> theta = pi -> phase 0.2
         self.phase = (theta / (2 * np.pi) - 0.5 + 0.2) % 1.0
         self.events = rec.events.assign(code=rec.events.code.astype(str).str.strip())
         self.probe = _probe(rec, path)
+
+        # Strongest single channel (as on the device viewer): best SCI among the good long channels,
+        # ties broken by the larger cardiac pulse (its presence = good optode contact, infopack 1).
+        cand = np.where(good)[0]
+        card = S.bandpass(hbo[:, cand], fs, 0.8, 2.5).std(0)
+        k = int(cand[np.lexsort((card, np.round(sci[cand], 2)))[-1]])
+        label = next((q["label"] for q in self.probe["pairs"] if q["pair"] == rec.pairs[k]), "")
+        self.best = dict(pair=rec.pairs[k], label=label, sci=round(float(sci[k]), 3), n_mean=int(good.sum()))
+        self.best_hbo_live = rs(S.bandpass(hbo[:, k], fs, 0.005, 2.5))
+        self.best_hbr_live = rs(S.bandpass(hbr[:, k], fs, 0.005, 2.5))
+        self.best_hbo = rs(S.bandpass(hbo[:, k], fs, 0.005, 0.5))
+        self.best_hbr = rs(S.bandpass(hbr[:, k], fs, 0.005, 0.5))
 
         # brain map: per-pair HbO/HbR on the 10 Hz grid (order = probe["pairs"]); bad channels -> NaN
         idx = np.minimum((self.t * fs).astype(int), n - 1)
@@ -437,7 +454,13 @@ class ReplaySource:
             breath=dict(phase=round(ph, 3), stage=stage, signal=round(float(r.breath[i]), 3), source=SRC,
                         confidence=0.4 if self.hold_open else 0.7),
             pacer=pacer,
-            hb=dict(hbo_uM=round(float(r.hbo[i]), 4), hbr_uM=round(float(r.hbr[i]), 4), source=SRC),
+            hb=dict(hbo_uM=round(float(r.hbo_live[i]), 4), hbr_uM=round(float(r.hbr_live[i]), 4),
+                    hbo_trend_uM=round(float(r.hbo[i]), 4), hbr_trend_uM=round(float(r.hbr[i]), 4),
+                    n_channels=r.best["n_mean"],
+                    best=dict(pair=r.best["pair"], label=r.best["label"], sci=r.best["sci"],
+                              hbo_uM=round(float(r.best_hbo_live[i]), 4), hbr_uM=round(float(r.best_hbr_live[i]), 4),
+                              hbo_trend_uM=round(float(r.best_hbo[i]), 4), hbr_trend_uM=round(float(r.best_hbr[i]), 4)),
+                    source=SRC),
             hr_instant=round(60000.0 / last, 1) if last else None,
             motion=dict(level=round(level, 3), still=level < 0.3, source=SRC),
         )

@@ -157,6 +157,18 @@ class MockSource:
         return True
 
     # ------------------------------------------------------------------ simulation step
+    def _best_channel(self, hbo: float, hbr: float, pulse: float, dt: float) -> dict:
+        """One channel instead of the mean: larger swings and its own noise."""
+        if not hasattr(self, "_best_meta"):
+            first = next(p for p in self.probe()["pairs"] if not p["short"])
+            self._best_meta = dict(pair=first["pair"], label=first["label"], sci=0.98)
+            self._best_n = 0.0
+        self._best_n = self._ou(self._best_n, 1.5, 0.05, dt)
+        o_tr = 1.4 * (hbo - pulse) + self._best_n
+        r_tr = 1.3 * hbr - 0.3 * self._best_n
+        return dict(**self._best_meta, hbo_uM=round(o_tr + 1.6 * pulse, 4), hbr_uM=round(r_tr, 4),
+                    hbo_trend_uM=round(o_tr, 4), hbr_trend_uM=round(r_tr, 4))
+
     def _ou(self, x: float, tau: float, sigma: float, dt: float) -> float:
         return x - x * dt / tau + sigma * math.sqrt(2 * dt / tau) * self.rng.gauss(0, 1)
 
@@ -295,7 +307,10 @@ class MockSource:
             breath=dict(phase=round(self.phase, 3), stage=stage, signal=round(self.signal, 3),
                         source=SRC, confidence=conf),
             pacer=pacer,
-            hb=dict(hbo_uM=round(hbo, 4), hbr_uM=round(hbr, 4), source=SRC),
+            hb=dict(hbo_uM=round(hbo, 4), hbr_uM=round(hbr, 4),
+                    hbo_trend_uM=round(hbo - pulse, 4), hbr_trend_uM=round(hbr, 4),
+                    n_channels=sum(d >= 15 for _, d in PAIRS), best=self._best_channel(hbo, hbr, pulse, dt),
+                    source=SRC),
             hr_instant=round(self.hr_inst, 1),
             motion=dict(level=round(level, 3), still=still, source=SRC),
         )

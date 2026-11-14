@@ -115,12 +115,16 @@ export type Summary = {
 
 // ---------------------------------------------------------------- WebSocket stream
 
+/** Live HbO/HbR incl. the cardiac pulse (0.005–2.5 Hz) and their trend without it (0.005–0.5 Hz). */
+export type HbValues = { hbo_uM: number; hbr_uM: number; hbo_trend_uM?: number; hbr_trend_uM?: number };
+
 export type FrameMsg = {
   type: "frame";
   t: number;
   breath: { phase: number; stage: "inhale" | "exhale" | "hold"; signal: number; source: Source; confidence: number };
   pacer?: { target_phase: number; stage: "inhale" | "exhale" };
-  hb: { hbo_uM: number; hbr_uM: number; source: Source };
+  /** Mean of the good long channels, plus the strongest single channel. */
+  hb: HbValues & { n_channels?: number; best?: HbValues & { pair: string; label: string; sci: number }; source: Source };
   hr_instant?: number | null;
   motion: { level: number; still: boolean; source: Source };
 };
