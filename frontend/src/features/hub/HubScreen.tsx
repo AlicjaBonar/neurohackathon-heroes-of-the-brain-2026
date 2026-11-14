@@ -62,32 +62,8 @@ function ReadinessCard({
       aria-label="Zmień wygląd awatara"
     >
       <div className="readiness-top">
-        <div>
-          <span>GOTOWOŚĆ</span>
-          <strong>
-            <i /> {dashboard?.readiness.text ?? "Brak pomiarów – zrób pierwszą sesję"}
-          </strong>
-        </div>
-        <span className="avatar-hint">Kliknij, aby zmienić</span>
       </div>
       <Avatar aura avatar={avatar} introGesture="six_seven" />
-      <div className="flow-score">
-        <div className="score-ring">
-          <strong>
-            {hr ? Math.round(hr.value) : "—"}
-            <small> BPM</small>
-          </strong>
-        </div>
-        <div>
-          <small>TĘTNO SPOCZYNKOWE</small>
-          <strong>{rmssd ? `HRV ${Math.round(rmssd.value)} ms` : "HRV —"}</strong>
-          <span>
-            {hr?.delta != null
-              ? `${hr.delta > 0 ? "+" : ""}${hr.delta} BPM vs. Twoja średnia`
-              : "linia bazowa po kilku sesjach"}
-          </span>
-        </div>
-      </div>
     </GlassPanel>
   );
 }
@@ -99,12 +75,14 @@ export function HubScreen({
   avatar,
   onAvatarChange,
   onStats,
+  onProfile,
   onSession,
 }: {
   user: User;
   avatar: AvatarConfig;
   onAvatarChange: (avatar: AvatarConfig) => void;
   onStats: () => void;
+  onProfile: () => void;
   onSession: (exercise: Exercise, source: SourceIn) => void;
 }) {
   const [openModal, setOpenModal] = useState<OpenModal>(null);
@@ -135,9 +113,9 @@ export function HubScreen({
     },
     {
       tone: "avatar",
-      title: "Zmień awatara",
-      subtitle: "Dopasuj wygląd",
-      onClick: () => setOpenModal("avatar"),
+      title: "Zaktualizuj profil",
+      subtitle: "Dane i wygląd awatara",
+      onClick: onProfile,
     },
   ];
 

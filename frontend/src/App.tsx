@@ -31,6 +31,7 @@ export default function App() {
   if (!user || screen === "profile") {
     return (
       <ProfileScreen
+        user={user}
         avatar={avatar}
         onAvatarChange={setAvatar}
         onDone={(u) => {
@@ -50,6 +51,7 @@ export default function App() {
           avatar={avatar}
           onAvatarChange={setAvatar}
           onStats={() => setScreen("stats")}
+          onProfile={() => setScreen("profile")}
           onSession={(exercise, source) => {
             setActive({ exercise, source });
             setScreen("session");
