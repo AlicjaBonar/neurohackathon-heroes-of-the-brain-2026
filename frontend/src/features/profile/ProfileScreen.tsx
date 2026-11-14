@@ -7,20 +7,6 @@ import { Avatar } from "@/features/avatar/Avatar";
 import type { AvatarConfig } from "@/features/avatar/avatarConfig";
 import { ProfileForm } from "./ProfileForm";
 
-function CalibrationBadge({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="calibration-badge">
-      <span>
-        <Icon name="check" size={17} />
-      </span>
-      <div>
-        <small>{label}</small>
-        <strong>{value}</strong>
-      </div>
-    </div>
-  );
-}
-
 function AvatarPreviewPanel({ avatar }: { avatar: AvatarConfig }) {
   return (
     <GlassPanel className="avatar-panel">
@@ -28,7 +14,6 @@ function AvatarPreviewPanel({ avatar }: { avatar: AvatarConfig }) {
         <Icon name="wave" size={16} /> OPTYCZNA TOMOGRAFIA KORY
       </div>
       <Avatar avatar={avatar} interactive />
-      <CalibrationBadge label="Kalibracja fNIRS" value="po podłączeniu opaski" />
     </GlassPanel>
   );
 }

@@ -25,21 +25,6 @@ const NEW_PROFILE = "Nowy profil";
 const personaLabel = (p: Persona) =>
   `${p.id.replace("demo_", "").replace("_", " ").toUpperCase()} · ${p.sex ?? "?"}, ${p.age ?? "?"} l.`;
 
-function SignalCorrectionStatus({ label, status }: { label: string; status: string }) {
-  return (
-    <div className="correction">
-      <span>
-        <Icon name="wave" size={18} />
-      </span>
-      <div>
-        <small>{label}</small>
-        <strong>{status}</strong>
-      </div>
-      <i />
-    </div>
-  );
-}
-
 export function ProfileForm({
   avatar,
   onAvatarChange,
@@ -110,7 +95,6 @@ export function ProfileForm({
         </span>
         <div>
           <h2>Twój profil</h2>
-          <p>Wiek, wzrost i waga służą do korekcji sygnału i szacowania formy</p>
         </div>
       </div>
 
@@ -120,9 +104,11 @@ export function ProfileForm({
 
       {!selected && (
         <>
-          <label className="text-field">
+          <label>
             Imię lub pseudonim
-            <input value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
+            <div className="input-wrap">
+              <input value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
+            </div>
           </label>
           <div className="form-row">
             <UnitField label="Wiek" unit="lat" value={age} onChange={setAge} />
@@ -137,13 +123,11 @@ export function ProfileForm({
         </>
       )}
 
-      <SignalCorrectionStatus label="Korekcja NIR 760/850 nm" status="Aktywna" />
       {error && <p className="form-error" role="alert">{error}</p>}
 
-      <Button block trailing="→" onClick={() => void submit()} disabled={busy}>
+      <Button onClick={() => void submit()} disabled={busy}>
         {busy ? "Zapisywanie…" : selected ? "Wczytaj profil demo" : "Zapisz profil"}
       </Button>
-      <p className="privacy">Dane są przetwarzane lokalnie i pozostają prywatne.</p>
     </GlassPanel>
   );
 }
