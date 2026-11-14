@@ -19,12 +19,12 @@ type Layer = {
 };
 
 const LAYERS: Layer[] = [
-  { id: "breath", label: "Oddech (fNIRS)", color: "#00b4d8", unit: "", get: (s) => s.breath, format: (v) => v.toFixed(2), minSpan: 1.5 },
-  { id: "target", label: "Rytm docelowy", color: "#f4a261", unit: "", get: (s) => s.target, format: (v) => (v < 0.5 ? "wdech" : "wydech"), range: [0, 1] },
+  { id: "breath", label: "Breath (fNIRS)", color: "#00b4d8", unit: "", get: (s) => s.breath, format: (v) => v.toFixed(2), minSpan: 1.5 },
+  { id: "target", label: "Target rhythm", color: "#f4a261", unit: "", get: (s) => s.target, format: (v) => (v < 0.5 ? "inhale" : "exhale"), range: [0, 1] },
   { id: "hbo", label: "HbO", color: "#dc2626", unit: " µM", get: (s) => s.hbo, format: (v) => v.toFixed(2), minSpan: 0.2 },
   { id: "hbr", label: "HbR", color: "#6366f1", unit: " µM", get: (s) => s.hbr, format: (v) => v.toFixed(2), minSpan: 0.1 },
-  { id: "hr", label: "Tętno chwilowe", color: "#db2777", unit: " bpm", get: (s) => s.hr, format: (v) => v.toFixed(0), minSpan: 8 },
-  { id: "motion", label: "Ruch", color: "#64748b", unit: "%", get: (s) => s.motion, format: (v) => (v * 100).toFixed(0), range: [0, 1] },
+  { id: "hr", label: "Instant heart rate", color: "#db2777", unit: " bpm", get: (s) => s.hr, format: (v) => v.toFixed(0), minSpan: 8 },
+  { id: "motion", label: "Motion", color: "#64748b", unit: "%", get: (s) => s.motion, format: (v) => (v * 100).toFixed(0), range: [0, 1] },
   { id: "lock", label: "Phase-lock", color: "#10b981", unit: "%", get: (s) => s.lock, format: (v) => (v * 100).toFixed(0), range: [0, 1] },
 ];
 const BY_ID = Object.fromEntries(LAYERS.map((l) => [l.id, l])) as Record<LayerId, Layer>;
@@ -174,7 +174,7 @@ export function LiveSignalCard({
   return (
     <GlassPanel as="article" className="live-chart-card">
       <CardHeader
-        caption="SYGNAŁY NA ŻYWO • OSTATNIE 30 S"
+        caption="LIVE SIGNALS • LAST 30 S"
         title={stage ? `Monitor • ${stage.toLowerCase()}` : "Monitor"}
         aside={
           <div className="coherence">
@@ -183,7 +183,7 @@ export function LiveSignalCard({
           </div>
         }
       />
-      <div className="layer-toggles" role="group" aria-label="Warstwy sygnału">
+      <div className="layer-toggles" role="group" aria-label="Signal layers">
         {LAYERS.map((l) => (
           <button
             key={l.id}
@@ -202,13 +202,13 @@ export function LiveSignalCard({
         {lanes.length ? (
           lanes.map(({ key, ...lane }) => <Lane key={key} samples={samples} {...lane} />)
         ) : (
-          <p className="empty-note">Włącz przynajmniej jedną warstwę sygnału.</p>
+          <p className="empty-note">Turn on at least one signal layer.</p>
         )}
         {lanes.length > 0 && (
           <div className="lane-axis">
             <span>−30 s</span>
             <span>−15 s</span>
-            <span>teraz</span>
+            <span>now</span>
           </div>
         )}
       </div>

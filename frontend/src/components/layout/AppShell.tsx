@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { getJson } from "@/api/rest";
 
-export function Brand() {
+export function Brand({ tagline = "ODDECH • RUCH • FLOW" }: { tagline?: string }) {
   return (
     <div className="brand">
       <div className="brand-mark">
@@ -11,7 +11,7 @@ export function Brand() {
       </div>
       <div>
         <strong>NeuroFlow</strong>
-        <small>ODDECH • RUCH • FLOW</small>
+        <small>{tagline}</small>
       </div>
     </div>
   );
@@ -45,16 +45,18 @@ export function StatusPill() {
 export function AppShell({
   variant = "default",
   headerContent = <StatusPill />,
+  tagline,
   children,
 }: {
   variant?: "default" | "session";
+  tagline?: string;
   headerContent?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <main className={variant === "session" ? "session-shell" : "app-shell"}>
       <header>
-        <Brand />
+        <Brand tagline={tagline} />
         {headerContent}
       </header>
       {children}

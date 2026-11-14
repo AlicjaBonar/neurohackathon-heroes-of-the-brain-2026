@@ -6,7 +6,7 @@ import type { Exercise, SourceIn, Summary } from "@/api/types";
 import { Avatar } from "@/features/avatar/Avatar";
 import type { AvatarConfig } from "@/features/avatar/avatarConfig";
 import { cx, formatDuration } from "@/lib/utils";
-import { describeEvent, PHASE_LABELS, STAGE_LABELS } from "./labels";
+import { describeEvent, EXERCISE_TITLES, SESSION_PHASE_LABELS, STAGE_LABELS, WARNING_TEXT } from "./labels";
 import { LiveSignalCard } from "./LiveSignal";
 import { useLiveSession, type LiveState } from "./useLiveSession";
 import { VitalsPanel } from "./VitalsPanel";
@@ -14,7 +14,7 @@ import { VitalsPanel } from "./VitalsPanel";
 /** Red countdown that covers the avatar during the rest between breathing sets. */
 function RestTimer({ seconds, label, hint }: { seconds: number; label: string; hint: string }) {
   return (
-    <div className="rest-timer" role="timer" aria-label={`${label}, jeszcze ${seconds} sekund`}>
+    <div className="rest-timer" role="timer" aria-label={`${label}, ${seconds} seconds left`}>
       <small>{label}</small>
       <strong>{seconds}</strong>
       <span>{hint}</span>
@@ -50,7 +50,7 @@ function BreathingPanel({
   return (
     <GlassPanel className={cx("breathing-panel", "active")}>
       <div className="breath-header">
-        <span>{stage ? STAGE_LABELS[stage] : "ŁĄCZENIE…"}</span>
+        <span>{stage ? STAGE_LABELS[stage] : "CONNECTING…"}</span>
         <strong>{formatDuration(Math.floor(elapsed))}</strong>
       </div>
       <Avatar
@@ -61,10 +61,10 @@ function BreathingPanel({
         deepBreathing={deepBreathing}
         overlay={
           holding ? (
-            <RestTimer seconds={holdLeft} label="BEZDECH" hint="wstrzymaj oddech" />
+            <RestTimer seconds={holdLeft} label="HOLD" hint="hold your breath" />
           ) : (
             restLeft !== null && (
-              <RestTimer seconds={restLeft} label="PRZERWA" hint="s do kolejnej serii" />
+              <RestTimer seconds={restLeft} label="REST" hint="s until the next set" />
             )
           )
         }
@@ -73,20 +73,20 @@ function BreathingPanel({
         <span>
           {leadLeft !== null
             ? leadLeft > 0
-              ? `Seria 1 za ${leadLeft} s – oddychaj swobodnie`
-              : "Seria 1 zaraz się zacznie…"
+              ? `Set 1 in ${leadLeft} s – breathe freely`
+              : "Set 1 is about to start…"
             : phase
-              ? (PHASE_LABELS[phase] ?? phase)
-              : "Przygotowanie"}
+              ? (SESSION_PHASE_LABELS[phase] ?? phase)
+              : "Getting ready"}
         </span>
         {progress !== null && <div className="phase-progress"><ProgressBar value={progress} /></div>}
       </div>
       <div className="avatar-session-controls">
         {canEndHold && (
-          <Button onClick={onEndHold}>Skończyłem</Button>
+          <Button onClick={onEndHold}>I'm done</Button>
         )}
         <Button variant="danger" onClick={onEnd}>
-          Zakończ
+          End session
         </Button>
       </div>
     </GlassPanel>
@@ -117,7 +117,8 @@ export function SessionScreen({
 
   const { frame, vitals, device, status } = state;
   const lastEvent = [...state.events].reverse().find((e) => describeEvent(e));
-  const warning = state.quality?.warnings[0]?.text;
+  const firstWarning = state.quality?.warnings[0];
+  const warning = firstWarning ? (WARNING_TEXT[firstWarning.code] ?? firstWarning.text) : undefined;
   const isPaced = !!frame?.pacer;
   const score = isPaced && vitals?.phase_lock
     ? Math.round(vitals.phase_lock.value * 100)
@@ -126,11 +127,11 @@ export function SessionScreen({
 
   if (status === "error") {
     return (
-      <AppShell variant="session" headerContent={<BackButton onClick={onExit} />}>
+      <AppShell variant="session" tagline="BREATH • MOTION • FLOW" headerContent={<BackButton onClick={onExit} label="Back" />}>
         <GlassPanel className="session-error">
-          <h2>Nie udało się uruchomić sesji</h2>
+          <h2>Could not start the session</h2>
           <p>{state.error}</p>
-          <Button onClick={onExit}>Wróć</Button>
+          <Button onClick={onExit}>Back</Button>
         </GlassPanel>
       </AppShell>
     );
@@ -139,13 +140,14 @@ export function SessionScreen({
   return (
     <AppShell
       variant="session"
+      tagline="BREATH • MOTION • FLOW"
       headerContent={
         <>
           <div className="live-title">
-            <i /> {exercise.title} <span>•</span> fNIRS {device ? `${device.fs_hz} Hz` : "…"}{" "}
-            <b>{device?.source === "simulated" ? "SYMULACJA" : "NA ŻYWO"}</b>
+            <i /> {EXERCISE_TITLES[exercise.id] ?? exercise.title} <span>•</span> fNIRS {device ? `${device.fs_hz} Hz` : "…"}{" "}
+            <b>{device?.source === "simulated" ? "SIMULATION" : "LIVE"}</b>
           </div>
-          <BackButton onClick={onExit} />
+          <BackButton onClick={onExit} label="Back" />
         </>
       }
     >
@@ -160,17 +162,17 @@ export function SessionScreen({
         <div className="live-column">
           <LiveSignalCard
             samples={state.samples}
-            scoreLabel={isPaced ? "ZGODNOŚĆ Z RYTMEM" : "REZONANS"}
+            scoreLabel={isPaced ? "RHYTHM MATCH" : "RESONANCE"}
             score={score}
             stage={frame ? STAGE_LABELS[frame.breath.stage] : ""}
             footer={
               <>
                 <span className={cx("status-dot", state.quality?.ready ? "ok" : "wait")} />
-                Jakość sygnału: {state.quality ? `${Math.round(state.quality.good_pct)}% dobrych kanałów` : "…"}
+                Signal quality: {state.quality ? `${Math.round(state.quality.good_pct)}% good channels` : "…"}
                 <span>•</span>
-                {frame ? (frame.motion.still ? "bezruch – pomiar ważny" : "ruch – pomiar wstrzymany") : "…"}
+                {frame ? (frame.motion.still ? "still – measurement valid" : "moving – measurement paused") : "…"}
                 <span>•</span>
-                {device ? `${device.n_pairs} par źródło–detektor` : ""}
+                {device ? `${device.n_pairs} source–detector pairs` : ""}
               </>
             }
           />
@@ -180,9 +182,9 @@ export function SessionScreen({
               {warning && <span>{warning}</span>}
               {state.pendingCommand && (
                 <div className="event-actions">
-                  <Button onClick={() => simulateMotion(true, state.pendingCommand!)}>Symuluj poprawny ruch</Button>
+                  <Button onClick={() => simulateMotion(true, state.pendingCommand!)}>Simulate correct move</Button>
                   <Button variant="ghost" onClick={() => simulateMotion(false, state.pendingCommand!)}>
-                    Symuluj błędny ruch
+                    Simulate wrong move
                   </Button>
                 </div>
               )}

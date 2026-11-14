@@ -21,11 +21,10 @@ type Tile = {
 };
 
 const fmt = (v: number | null | undefined, digits = 0) =>
-  v === null || v === undefined || !Number.isFinite(v) ? "—" : v.toFixed(digits).replace(".", ",");
+  v === null || v === undefined || !Number.isFinite(v) ? "—" : v.toFixed(digits);
 const signed = (v: number, unit: string) => `${v > 0 ? "+" : ""}${fmt(v, Number.isInteger(v) ? 0 : 1)}${unit}`;
 
-const cyclesWord = (n: number) =>
-  n === 1 ? "cykl" : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? "cykle" : "cykli";
+const cyclesWord = (n: number) => (n === 1 ? "cycle" : "cycles");
 
 /** Paced resonance breathing: 6 breaths/min (inhale 4.5 s, exhale 5.5 s). */
 const TARGET_RATE = 6;
@@ -40,14 +39,14 @@ function tiles(v: VitalsMsg | null, paced: boolean): Tile[] {
   return [
     {
       id: "hr",
-      label: "Tętno",
+      label: "Heart rate",
       value: fmt(v?.hr.bpm),
       unit: " bpm",
       color: "#f43f5e",
       // Lower heart rate than at rest = calming down.
       delta: hrDelta === undefined ? null : { text: `${signed(hrDelta, "")} vs start`, good: hrDelta <= 0 },
       confidence: v?.hr.confidence ?? null,
-      note: v?.hr.frozen ? "wstrzymane – ruch" : `okno ${v?.hr.window_s ?? 15} s`,
+      note: v?.hr.frozen ? "paused – motion" : `${v?.hr.window_s ?? 15} s window`,
       source: v?.hr.source,
       dim: !!v?.hr.frozen,
     },
@@ -59,7 +58,7 @@ function tiles(v: VitalsMsg | null, paced: boolean): Tile[] {
       color: "#10b981",
       delta: rmDelta === undefined ? null : { text: `${signed(rmDelta, "%")} vs start`, good: rmDelta >= 0 },
       confidence: v?.hrv.confidence ?? null,
-      note: v?.hrv.rmssd_ms ? `okno ${v.hrv.window_s} s` : "pojawi się po ok. 30 s",
+      note: v?.hrv.rmssd_ms ? `${v.hrv.window_s} s window` : "available after ~30 s",
       source: v?.hrv.source,
     },
     {
@@ -70,38 +69,38 @@ function tiles(v: VitalsMsg | null, paced: boolean): Tile[] {
       color: "#0d9488",
       delta: null,
       confidence: v?.hrv.confidence ?? null,
-      note: "zmienność całkowita",
+      note: "overall variability",
       source: v?.hrv.source,
     },
     {
       id: "resp",
-      label: "Częstość oddechu",
+      label: "Breathing rate",
       value: fmt(rate, 1),
       unit: " /min",
       color: "#00a8c9",
       delta:
         paced && rate !== null
-          ? { text: `cel ${TARGET_RATE} /min`, good: Math.abs(rate - TARGET_RATE) <= 0.5 }
+          ? { text: `target ${TARGET_RATE} /min`, good: Math.abs(rate - TARGET_RATE) <= 0.5 }
           : null,
       confidence: v?.resp.confidence ?? null,
-      note: rate === null ? "bezdech lub za mało danych" : `okno ${v?.resp.window_s ?? 60} s`,
+      note: rate === null ? "breath hold or not enough data" : `${v?.resp.window_s ?? 60} s window`,
       source: v?.resp.source,
     },
     {
       id: "resonance",
-      label: "Rezonans 0,1 Hz",
+      label: "Resonance 0.1 Hz",
       value: fmt(res?.score),
       unit: " /100",
       color: "#8b5cf6",
       delta:
         res?.power_0p1_rel !== undefined && res.baseline_rel !== undefined
           ? {
-              text: `moc ${fmt(res.power_0p1_rel * 100)}% vs ${fmt(res.baseline_rel * 100)}%`,
+              text: `power ${fmt(res.power_0p1_rel * 100)}% vs ${fmt(res.baseline_rel * 100)}% at rest`,
               good: res.power_0p1_rel > res.baseline_rel,
             }
           : null,
       confidence: null,
-      note: "moc pasma 0,07–0,13 Hz",
+      note: "0.07–0.13 Hz band power",
       source: res?.source,
     },
     {
@@ -112,7 +111,7 @@ function tiles(v: VitalsMsg | null, paced: boolean): Tile[] {
       color: "#0b9a70",
       delta: lock ? { text: `${lock.cycles} ${cyclesWord(lock.cycles)}`, good: lock.value >= 0.6 } : null,
       confidence: null,
-      note: lock ? "zgodność z rytmem docelowym" : paced ? "pojawi się po 2. cyklu" : "tylko w seriach z rytmem",
+      note: lock ? "match with the target rhythm" : paced ? "available after the 2nd cycle" : "only during paced sets",
       source: lock?.source,
     },
   ];
@@ -121,11 +120,11 @@ function tiles(v: VitalsMsg | null, paced: boolean): Tile[] {
 function ConfidenceBar({ value }: { value: number }) {
   const pct = Math.round(value * 100);
   return (
-    <div className="vital-confidence" title={`Pewność pomiaru: ${pct}%`}>
+    <div className="vital-confidence" title={`Measurement confidence: ${pct}%`}>
       <i>
         <b style={{ width: `${pct}%` }} />
       </i>
-      <span>pewność {pct}%</span>
+      <span>confidence {pct}%</span>
     </div>
   );
 }
@@ -143,7 +142,7 @@ export function VitalsPanel({ vitals, paced }: { vitals: VitalsMsg | null; paced
         >
           <small>
             {t.label}
-            {t.source === "simulated" && <span className="sim-tag" title="Wartość symulowana">SYM</span>}
+            {t.source === "simulated" && <span className="sim-tag" title="Simulated value">SYM</span>}
           </small>
           <strong>
             {t.value}
