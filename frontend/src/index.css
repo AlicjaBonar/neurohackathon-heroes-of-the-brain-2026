@@ -202,6 +202,8 @@ h1 {
 }
 .avatar-panel {
   min-height: 560px;
+  /* room under the stage for the gesture buttons above the calibration badge */
+  padding-bottom: 140px;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -377,158 +379,12 @@ h1 {
 }
 .avatar {
   position: absolute;
-  width: 160px;
-  height: 370px;
-  bottom: 56px;
+  /* larger than the figure so rotated limbs are not cut off; centred on the body */
+  width: 600px;
+  height: 600px;
+  bottom: -50px;
   z-index: 3;
   filter: drop-shadow(0 14px 14px rgba(34, 84, 88, 0.16));
-}
-.avatar-head {
-  position: absolute;
-  top: 3px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 70px;
-  height: 84px;
-  border-radius: 48% 48% 45% 45%;
-  background: linear-gradient(110deg, #d79e79, #f0c7a6 60%, #d99e78);
-  z-index: 5;
-  box-shadow: inset -8px -3px 12px rgba(116, 60, 40, 0.1);
-}
-.avatar-hair {
-  position: absolute;
-  width: 72px;
-  height: 34px;
-  left: -1px;
-  top: -3px;
-  border-radius: 48px 48px 18px 14px;
-  box-shadow: inset -6px -4px 8px rgba(0, 0, 0, 0.15);
-  z-index: 2;
-}
-.avatar-hair::after {
-  content: "";
-  position: absolute;
-  height: 24px;
-  width: 12px;
-  right: -1px;
-  top: 18px;
-  border-radius: 0 8px 8px 8px;
-  background: inherit;
-}
-.avatar-face {
-  position: absolute;
-  top: 43px;
-  left: 17px;
-  display: flex;
-  gap: 23px;
-}
-.avatar-face i {
-  width: 5px;
-  height: 3px;
-  background: #3c3431;
-  border-radius: 50%;
-}
-.avatar-ear {
-  position: absolute;
-  width: 9px;
-  height: 18px;
-  background: #dfa883;
-  top: 39px;
-  border-radius: 50%;
-}
-.avatar-ear.left {
-  left: -5px;
-}
-.avatar-ear.right {
-  right: -5px;
-}
-.avatar-neck {
-  position: absolute;
-  width: 28px;
-  height: 31px;
-  top: 74px;
-  left: 66px;
-  background: linear-gradient(90deg, #d79b74, #ecc09e);
-  z-index: 3;
-}
-.avatar-body {
-  position: absolute;
-  top: 91px;
-  left: 35px;
-  width: 90px;
-  height: 150px;
-  background: linear-gradient(100deg, #c99270, #efc09d 53%, #c88865);
-  border-radius: 35px 35px 22px 22px;
-  z-index: 4;
-  overflow: hidden;
-}
-.avatar-top {
-  position: absolute;
-  left: -2px;
-  bottom: -2px;
-  width: 94px;
-  height: 96px;
-  background: linear-gradient(120deg, #096a72, #0d8a8a 55%, #095b65);
-  border-radius: 22px 22px 12px 12px;
-}
-.avatar-top::before {
-  content: "";
-  position: absolute;
-  width: 34px;
-  height: 24px;
-  background: #e2b18e;
-  left: 30px;
-  top: -14px;
-  border-radius: 0 0 18px 18px;
-}
-.sensor {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  background: #76e9e6;
-  border: 2px solid white;
-  border-radius: 50%;
-  box-shadow: 0 0 9px #3ff;
-  bottom: 54px;
-  z-index: 5;
-}
-.sensor-one {
-  left: 20px;
-}
-.sensor-two {
-  right: 20px;
-}
-.avatar-arm {
-  position: absolute;
-  top: 105px;
-  width: 35px;
-  height: 158px;
-  background: linear-gradient(90deg, #cc916e, #eab997);
-  border-radius: 25px;
-  z-index: 2;
-}
-.avatar-arm.left {
-  left: 18px;
-  transform: rotate(6deg);
-}
-.avatar-arm.right {
-  right: 18px;
-  transform: rotate(-6deg);
-}
-.avatar-legs {
-  position: absolute;
-  top: 225px;
-  left: 43px;
-  display: flex;
-  gap: 10px;
-  z-index: 2;
-}
-.avatar-legs i {
-  display: block;
-  width: 32px;
-  height: 140px;
-  border-radius: 10px 10px 18px 18px;
-  background: linear-gradient(90deg, #123b4b, #1c5b68);
 }
 .has-aura .avatar {
   filter: drop-shadow(0 0 24px rgba(16, 185, 129, 0.36))
@@ -1852,7 +1708,7 @@ h1 {
 }
 
 .avatar-preview {
-  height: 330px;
+  height: 390px;
   overflow: hidden;
 }
 
@@ -2136,4 +1992,137 @@ h1 {
   .brand small {
     display: none;
   }
+}
+
+.avatar canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.avatar-controls {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+.avatar-controls.is-centered {
+  justify-items: center;
+  text-align: center;
+}
+.control-group {
+  display: grid;
+  gap: 8px;
+}
+.control-title {
+  font-size: 10px;
+  font-weight: 800;
+  color: #4f7078;
+}
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.is-centered .segmented {
+  justify-content: center;
+}
+.segmented button {
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #4f7078;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid #d4e4e4;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.segmented button.selected {
+  color: #0f4c5c;
+  border-color: #0d9488;
+  box-shadow: 0 0 0 1px #0d9488;
+}
+.segmented button:disabled,
+.is-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.swatch-custom {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  color: #79949a;
+  font-size: 8px;
+}
+.swatch-custom i {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 0 0 1px #d4e4e4;
+}
+.swatch-custom.selected {
+  color: #0f4c5c;
+  font-weight: 800;
+}
+.swatch-custom.selected i {
+  box-shadow: 0 0 0 2px #0d9488;
+}
+.swatch-custom input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 34px;
+  height: 34px;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.avatar canvas.is-draggable {
+  cursor: grab;
+  touch-action: none;
+}
+.avatar canvas.is-draggable:active {
+  cursor: grabbing;
+}
+.avatar-gestures {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -34px;
+  z-index: 6;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+.avatar-gestures small {
+  font-size: 9px;
+  color: #79949a;
+}
+.avatar-gestures div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.avatar-gestures button {
+  padding: 7px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #0f4c5c;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid #b9dcd9;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.avatar-gestures button.playing {
+  color: #fff;
+  background: #0d9488;
+  border-color: #0d9488;
+}
+.avatar-gestures button:disabled:not(.playing) {
+  opacity: 0.5;
+  cursor: default;
 }

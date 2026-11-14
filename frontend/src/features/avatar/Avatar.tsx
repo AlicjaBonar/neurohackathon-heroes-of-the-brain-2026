@@ -1,16 +1,14 @@
+import { useEffect, useRef, useState } from "react";
 import { cx } from "@/lib/utils";
+import type { AvatarConfig } from "./avatarConfig";
+import { AvatarScene, type Gesture } from "./avatarScene";
 
-export const HAIR_COLORS = {
-  Blond: "#e9c875",
-  Brązowe: "#67412c",
-  Czarne: "#182127",
-  Siwe: "#b8c3c6",
-  Brak: "transparent",
-} as const;
-
-export type HairColor = keyof typeof HAIR_COLORS;
-
-export const DEFAULT_HAIR_COLOR: HairColor = "Brązowe";
+const GESTURES: { id: Gesture; label: string }[] = [
+  { id: "six_seven", label: "Do 67" },
+  { id: "deep_breath", label: "Głęboki oddech" },
+  { id: "namaste", label: "Namaste" },
+  { id: "wave", label: "Pomachaj" },
+];
 
 const BUBBLES = [
   { id: "b1", left: "72%", top: "11%", size: "62px", label: "O₂" },
@@ -21,15 +19,80 @@ const BUBBLES = [
   { id: "b6", left: "29%", top: "4%", size: "25px" },
 ] as const;
 
+function Avatar3D({
+  avatar,
+  interactive,
+  introGesture,
+  sceneRef,
+}: {
+  avatar: AvatarConfig;
+  interactive: boolean;
+  introGesture?: Gesture;
+  sceneRef: React.RefObject<AvatarScene | null>;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const latest = useRef(avatar);
+  latest.current = avatar;
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const scene = new AvatarScene(canvas);
+    sceneRef.current = scene;
+    if (interactive) scene.enableRotation();
+    scene.setAppearance(latest.current);
+    void scene.setModel(latest.current).then(() => {
+      if (introGesture) void scene.playGesture(introGesture, () => {});
+    });
+    const observer = new ResizeObserver(() => scene.resize());
+    observer.observe(canvas);
+    return () => {
+      observer.disconnect();
+      scene.dispose();
+      sceneRef.current = null;
+    };
+  }, [interactive, sceneRef]);
+
+  useEffect(() => {
+    void sceneRef.current?.setModel(avatar);
+  }, [avatar.sex, avatar.texture, avatar.length]);
+
+  useEffect(() => {
+    sceneRef.current?.setAppearance(avatar);
+  }, [avatar.color, avatar.weight]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className={cx(interactive && "is-draggable")}
+      role="img"
+      aria-label="Awatar 3D"
+    />
+  );
+}
+
 export function Avatar({
-  hair = DEFAULT_HAIR_COLOR,
+  avatar,
   breathing = false,
   aura = false,
+  interactive = false,
+  introGesture,
 }: {
-  hair?: HairColor;
+  avatar: AvatarConfig;
   breathing?: boolean;
   aura?: boolean;
+  /** Drag to rotate in any direction and show the gesture buttons. */
+  interactive?: boolean;
+  /** Gesture played once, as soon as the model has loaded. */
+  introGesture?: Gesture;
 }) {
+  const sceneRef = useRef<AvatarScene | null>(null);
+  const [playing, setPlaying] = useState<Gesture | null>(null);
+  const play = (gesture: Gesture) => {
+    setPlaying(gesture);
+    sceneRef.current?.playGesture(gesture, () => setPlaying(null));
+  };
+
   return (
     <div className={cx("avatar-stage", breathing && "is-breathing", aura && "has-aura")}>
       <div className="orbit orbit-one" />
@@ -48,30 +111,31 @@ export function Avatar({
         <div />
       </div>
       <div className="avatar">
-        <div className="avatar-head">
-          {hair !== "Brak" && (
-            <div className="avatar-hair" style={{ background: HAIR_COLORS[hair] }} />
-          )}
-          <div className="avatar-ear left" />
-          <div className="avatar-ear right" />
-          <div className="avatar-face">
-            <i />
-            <i />
+        <Avatar3D
+          avatar={avatar}
+          interactive={interactive}
+          introGesture={introGesture}
+          sceneRef={sceneRef}
+        />
+      </div>
+      {interactive && (
+        <div className="avatar-gestures">
+          <small>Przeciągnij, aby obrócić · dwuklik resetuje</small>
+          <div>
+            {GESTURES.map((gesture) => (
+              <button
+                type="button"
+                className={cx(playing === gesture.id && "playing")}
+                disabled={playing !== null}
+                onClick={() => play(gesture.id)}
+                key={gesture.id}
+              >
+                {gesture.label}
+              </button>
+            ))}
           </div>
         </div>
-        <div className="avatar-neck" />
-        <div className="avatar-body">
-          <div className="avatar-top" />
-          <div className="sensor sensor-one" />
-          <div className="sensor sensor-two" />
-        </div>
-        <div className="avatar-arm left" />
-        <div className="avatar-arm right" />
-        <div className="avatar-legs">
-          <i />
-          <i />
-        </div>
-      </div>
+      )}
     </div>
   );
 }

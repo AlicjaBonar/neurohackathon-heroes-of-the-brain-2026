@@ -2,7 +2,8 @@ import { useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { BackButton, Button } from "@/components/ui/Button";
 import { GlassPanel, ValueWithUnit } from "@/components/ui/Card";
-import { Avatar, type HairColor } from "@/features/avatar/Avatar";
+import { Avatar } from "@/features/avatar/Avatar";
+import type { AvatarConfig } from "@/features/avatar/avatarConfig";
 import { cx, formatDuration, formatTrend, SENSOR_RATE_LABEL } from "@/lib/utils";
 import { LiveSignalCard } from "./LiveSignal";
 import { LIVE_METRICS, type LiveMetric, type SessionMode } from "./sessionData";
@@ -12,14 +13,14 @@ function BreathingPanel({
   active,
   phase,
   seconds,
-  hair,
+  avatar,
   onToggle,
   onEnd,
 }: {
   active: boolean;
   phase: BreathPhase;
   seconds: number;
-  hair: HairColor;
+  avatar: AvatarConfig;
   onToggle: () => void;
   onEnd: () => void;
 }) {
@@ -29,7 +30,7 @@ function BreathingPanel({
         <span>{active ? phase.toUpperCase() : "PAUZA"}</span>
         <strong>{formatDuration(seconds)}</strong>
       </div>
-      <Avatar breathing={active} aura hair={hair} />
+      <Avatar breathing={active} aura avatar={avatar} />
       <div className="avatar-session-controls">
         <button type="button" className="pause-button" onClick={onToggle}>
           <span>{active ? "Ⅱ" : "▶"}</span>
@@ -61,11 +62,11 @@ function LiveMetricCard({ metric }: { metric: LiveMetric }) {
 
 export function SessionScreen({
   mode,
-  hair,
+  avatar,
   onEnd,
 }: {
   mode: SessionMode;
-  hair: HairColor;
+  avatar: AvatarConfig;
   onEnd: () => void;
 }) {
   const [active, setActive] = useState(true);
@@ -88,7 +89,7 @@ export function SessionScreen({
           active={active}
           phase={phase}
           seconds={seconds}
-          hair={hair}
+          avatar={avatar}
           onToggle={() => setActive((value) => !value)}
           onEnd={onEnd}
         />

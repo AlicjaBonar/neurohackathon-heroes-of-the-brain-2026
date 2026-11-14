@@ -1,6 +1,7 @@
 import { Modal } from "@/components/ui/Modal";
-import { Avatar, type HairColor } from "@/features/avatar/Avatar";
-import { HairColorPicker } from "@/features/avatar/HairColorPicker";
+import { Avatar } from "@/features/avatar/Avatar";
+import type { AvatarConfig } from "@/features/avatar/avatarConfig";
+import { AvatarControls } from "@/features/avatar/AvatarControls";
 import { SESSION_MODES, type SessionMode } from "@/features/session/sessionData";
 import { formatOrdinal } from "@/lib/utils";
 
@@ -40,13 +41,13 @@ export function ActivityModal({
 export function AvatarModal({
   open,
   onClose,
-  hair,
-  onHairChange,
+  avatar,
+  onAvatarChange,
 }: {
   open: boolean;
   onClose: () => void;
-  hair: HairColor;
-  onHairChange: (hair: HairColor) => void;
+  avatar: AvatarConfig;
+  onAvatarChange: (avatar: AvatarConfig) => void;
 }) {
   return (
     <Modal
@@ -54,14 +55,14 @@ export function AvatarModal({
       onClose={onClose}
       eyebrow="WYGLĄD"
       title="Zmień awatara"
-      description="Wybierz wariant koloru włosów."
+      description="Ustaw płeć oraz rodzaj, długość i kolor włosów."
       closeLabel="Gotowe"
       className="avatar-modal"
     >
       <div className="avatar-preview">
-        <Avatar hair={hair} aura />
+        <Avatar avatar={avatar} aura interactive />
       </div>
-      <HairColorPicker layout="centered" value={hair} onChange={onHairChange} />
+      <AvatarControls layout="centered" avatar={avatar} onChange={onAvatarChange} />
     </Modal>
   );
 }

@@ -2,7 +2,8 @@ import { useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { GlassPanel } from "@/components/ui/Card";
 import { ScreenTitle } from "@/components/ui/Page";
-import { Avatar, type HairColor } from "@/features/avatar/Avatar";
+import { Avatar } from "@/features/avatar/Avatar";
+import type { AvatarConfig } from "@/features/avatar/avatarConfig";
 import type { SessionMode } from "@/features/session/sessionData";
 import { cx, formatOrdinal } from "@/lib/utils";
 import { ActivityModal, AvatarModal } from "./HubModals";
@@ -41,11 +42,11 @@ function HubActionsPanel({ actions }: { actions: HubAction[] }) {
 }
 
 function ReadinessCard({
-  hair,
+  avatar,
   score,
   onAvatarClick,
 }: {
-  hair: HairColor;
+  avatar: AvatarConfig;
   score: number;
   onAvatarClick: () => void;
 }) {
@@ -66,7 +67,7 @@ function ReadinessCard({
         </div>
         <span className="avatar-hint">Kliknij, aby zmienić</span>
       </div>
-      <Avatar aura hair={hair} />
+      <Avatar aura avatar={avatar} introGesture="six_seven" />
       <div className="flow-score">
         <div className="score-ring">
           <strong>
@@ -87,13 +88,13 @@ function ReadinessCard({
 type OpenModal = "activity" | "avatar" | null;
 
 export function HubScreen({
-  hair,
-  onHairChange,
+  avatar,
+  onAvatarChange,
   onStats,
   onSession,
 }: {
-  hair: HairColor;
-  onHairChange: (hair: HairColor) => void;
+  avatar: AvatarConfig;
+  onAvatarChange: (avatar: AvatarConfig) => void;
   onStats: () => void;
   onSession: (mode: SessionMode) => void;
 }) {
@@ -136,15 +137,15 @@ export function HubScreen({
       />
       <section className="hub-dashboard">
         <HubActionsPanel actions={actions} />
-        <ReadinessCard hair={hair} score={88} onAvatarClick={() => setOpenModal("avatar")} />
+        <ReadinessCard avatar={avatar} score={88} onAvatarClick={() => setOpenModal("avatar")} />
       </section>
 
       <ActivityModal open={openModal === "activity"} onClose={closeModal} onSelect={onSession} />
       <AvatarModal
         open={openModal === "avatar"}
         onClose={closeModal}
-        hair={hair}
-        onHairChange={onHairChange}
+        avatar={avatar}
+        onAvatarChange={onAvatarChange}
       />
     </AppShell>
   );

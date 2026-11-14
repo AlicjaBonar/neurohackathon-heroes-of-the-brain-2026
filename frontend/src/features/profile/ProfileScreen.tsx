@@ -2,7 +2,8 @@ import { AppShell } from "@/components/layout/AppShell";
 import { GlassPanel } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
 import { ScreenTitle, StepIndicator } from "@/components/ui/Page";
-import { Avatar, type HairColor } from "@/features/avatar/Avatar";
+import { Avatar } from "@/features/avatar/Avatar";
+import type { AvatarConfig } from "@/features/avatar/avatarConfig";
 import { ProfileForm } from "./ProfileForm";
 
 function CalibrationBadge({ label, value }: { label: string; value: string }) {
@@ -19,25 +20,25 @@ function CalibrationBadge({ label, value }: { label: string; value: string }) {
   );
 }
 
-function AvatarPreviewPanel({ hair }: { hair: HairColor }) {
+function AvatarPreviewPanel({ avatar }: { avatar: AvatarConfig }) {
   return (
     <GlassPanel className="avatar-panel">
       <div className="science-tag">
         <Icon name="wave" size={16} /> OPTYCZNA TOMOGRAFIA KORY
       </div>
-      <Avatar hair={hair} />
+      <Avatar avatar={avatar} interactive />
       <CalibrationBadge label="Kalibracja fNIRS" value="SCI 96%" />
     </GlassPanel>
   );
 }
 
 export function ProfileScreen({
-  hair,
-  onHairChange,
+  avatar,
+  onAvatarChange,
   onNext,
 }: {
-  hair: HairColor;
-  onHairChange: (hair: HairColor) => void;
+  avatar: AvatarConfig;
+  onAvatarChange: (avatar: AvatarConfig) => void;
   onNext: () => void;
 }) {
   return (
@@ -49,8 +50,8 @@ export function ProfileScreen({
         aside={<StepIndicator current={1} total={2} />}
       />
       <section className="split profile-grid">
-        <AvatarPreviewPanel hair={hair} />
-        <ProfileForm hair={hair} onHairChange={onHairChange} onSubmit={onNext} />
+        <AvatarPreviewPanel avatar={avatar} />
+        <ProfileForm avatar={avatar} onAvatarChange={onAvatarChange} onSubmit={onNext} />
       </section>
     </AppShell>
   );

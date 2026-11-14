@@ -1,13 +1,10 @@
 import { useState } from "react";
-import { SelectField, UnitField } from "@/components/form/Fields";
+import { UnitField } from "@/components/form/Fields";
 import { Button } from "@/components/ui/Button";
 import { GlassPanel } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
-import type { HairColor } from "@/features/avatar/Avatar";
-import { HairColorPicker } from "@/features/avatar/HairColorPicker";
-
-const HAIR_LENGTHS = ["Krótkie", "Średnie", "Długie"] as const;
-type HairLength = (typeof HAIR_LENGTHS)[number];
+import type { AvatarConfig } from "@/features/avatar/avatarConfig";
+import { AvatarControls } from "@/features/avatar/AvatarControls";
 
 function SignalCorrectionStatus({ label, status }: { label: string; status: string }) {
   return (
@@ -25,17 +22,15 @@ function SignalCorrectionStatus({ label, status }: { label: string; status: stri
 }
 
 export function ProfileForm({
-  hair,
-  onHairChange,
+  avatar,
+  onAvatarChange,
   onSubmit,
 }: {
-  hair: HairColor;
-  onHairChange: (hair: HairColor) => void;
+  avatar: AvatarConfig;
+  onAvatarChange: (avatar: AvatarConfig) => void;
   onSubmit: () => void;
 }) {
   const [age, setAge] = useState("24");
-  const [weight, setWeight] = useState("72");
-  const [hairLength, setHairLength] = useState<HairLength>("Krótkie");
 
   return (
     <GlassPanel className="form-panel">
@@ -51,20 +46,11 @@ export function ProfileForm({
 
       <div className="form-row">
         <UnitField label="Wiek" unit="lat" value={age} onChange={setAge} />
-        <UnitField label="Waga" unit="kg" value={weight} onChange={setWeight} />
+        <UnitField label="Waga" unit="kg" value={avatar.weight > 0 ? String(avatar.weight) : ""}
+          onChange={(value) => onAvatarChange({ ...avatar, weight: Number(value) })} />
       </div>
 
-      <div className="field-block">
-        <label>Kolor włosów</label>
-        <HairColorPicker value={hair} onChange={onHairChange} />
-      </div>
-
-      <SelectField
-        label="Długość włosów"
-        options={HAIR_LENGTHS}
-        value={hairLength}
-        onChange={setHairLength}
-      />
+      <AvatarControls avatar={avatar} onChange={onAvatarChange} />
 
       <SignalCorrectionStatus label="Korekcja NIR 760/850 nm" status="Aktywna" />
 
