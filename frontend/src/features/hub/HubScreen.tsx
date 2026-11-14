@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "@/api/backend";
+import type { Dashboard, Exercise, SourceIn, User } from "@/api/types";
 import { AppShell } from "@/components/layout/AppShell";
 import { GlassPanel } from "@/components/ui/Card";
 import { ScreenTitle } from "@/components/ui/Page";
 import { Avatar } from "@/features/avatar/Avatar";
 import type { AvatarConfig } from "@/features/avatar/avatarConfig";
-import type { SessionMode } from "@/features/session/sessionData";
 import { cx, formatOrdinal } from "@/lib/utils";
 import { ActivityModal, AvatarModal } from "./HubModals";
 
@@ -43,13 +44,15 @@ function HubActionsPanel({ actions }: { actions: HubAction[] }) {
 
 function ReadinessCard({
   avatar,
-  score,
+  dashboard,
   onAvatarClick,
 }: {
   avatar: AvatarConfig;
-  score: number;
+  dashboard: Dashboard | null;
   onAvatarClick: () => void;
 }) {
+  const hr = dashboard?.readiness.hr_rest;
+  const rmssd = dashboard?.readiness.rmssd;
   return (
     <GlassPanel
       as="button"
@@ -60,9 +63,9 @@ function ReadinessCard({
     >
       <div className="readiness-top">
         <div>
-          <span>GOTOWOŚĆ NEUROFIZJOLOGICZNA</span>
+          <span>GOTOWOŚĆ</span>
           <strong>
-            <i /> Sygnał optymalny
+            <i /> {dashboard?.readiness.text ?? "Brak pomiarów – zrób pierwszą sesję"}
           </strong>
         </div>
         <span className="avatar-hint">Kliknij, aby zmienić</span>
@@ -71,14 +74,18 @@ function ReadinessCard({
       <div className="flow-score">
         <div className="score-ring">
           <strong>
-            {score}
-            <small>%</small>
+            {hr ? Math.round(hr.value) : "—"}
+            <small> BPM</small>
           </strong>
         </div>
         <div>
-          <small>GOTOWOŚĆ</small>
-          <strong>Flow</strong>
-          <span>Wysoka dyspozycja</span>
+          <small>TĘTNO SPOCZYNKOWE</small>
+          <strong>{rmssd ? `HRV ${Math.round(rmssd.value)} ms` : "HRV —"}</strong>
+          <span>
+            {hr?.delta != null
+              ? `${hr.delta > 0 ? "+" : ""}${hr.delta} BPM vs. Twoja średnia`
+              : "linia bazowa po kilku sesjach"}
+          </span>
         </div>
       </div>
     </GlassPanel>
@@ -88,17 +95,29 @@ function ReadinessCard({
 type OpenModal = "activity" | "avatar" | null;
 
 export function HubScreen({
+  user,
   avatar,
   onAvatarChange,
   onStats,
   onSession,
 }: {
+  user: User;
   avatar: AvatarConfig;
   onAvatarChange: (avatar: AvatarConfig) => void;
   onStats: () => void;
-  onSession: (mode: SessionMode) => void;
+  onSession: (exercise: Exercise, source: SourceIn) => void;
 }) {
   const [openModal, setOpenModal] = useState<OpenModal>(null);
+  const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+
+  useEffect(() => {
+    api.dashboard(user.id).then(setDashboard).catch(() => setDashboard(null));
+    api.exercises().then(setExercises).catch(() => setExercises([]));
+  }, [user.id]);
+
+  // Demo personas replay their own real recordings; everyone else gets the simulator.
+  const source: SourceIn = user.is_demo ? { type: "replay" } : { type: "mock" };
   const closeModal = () => setOpenModal(null);
 
   const actions: HubAction[] = [
@@ -125,22 +144,29 @@ export function HubScreen({
   return (
     <AppShell>
       <ScreenTitle
-        eyebrow="DZIEŃ DOBRY, KAMIL"
+        eyebrow={`DZIEŃ DOBRY, ${user.name.toUpperCase()}`}
         title="Centrum treningowe"
         description="Wybierz tryb i zsynchronizuj oddech z aktywnością kory."
         aside={
-          <div className="day-score">
-            <span>Seria</span>
-            <strong>12 dni</strong>
-          </div>
+          dashboard?.fitness.crf_mets != null ? (
+            <div className="day-score">
+              <span>Forma (CRF)</span>
+              <strong>{dashboard.fitness.crf_mets} MET</strong>
+            </div>
+          ) : undefined
         }
       />
       <section className="hub-dashboard">
         <HubActionsPanel actions={actions} />
-        <ReadinessCard avatar={avatar} score={88} onAvatarClick={() => setOpenModal("avatar")} />
+        <ReadinessCard avatar={avatar} dashboard={dashboard} onAvatarClick={() => setOpenModal("avatar")} />
       </section>
 
-      <ActivityModal open={openModal === "activity"} onClose={closeModal} onSelect={onSession} />
+      <ActivityModal
+        open={openModal === "activity"}
+        onClose={closeModal}
+        exercises={exercises}
+        onSelect={(exercise) => onSession(exercise, source)}
+      />
       <AvatarModal
         open={openModal === "avatar"}
         onClose={closeModal}

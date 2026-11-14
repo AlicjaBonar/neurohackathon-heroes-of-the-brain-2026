@@ -1,6 +1,3 @@
-/** fNIRS sampling rate shown in the header (mocked until the live stream is wired up). */
-export const SENSOR_RATE_LABEL = "141.79 Hz";
-
 /** Joins truthy class names into a single `className` string. */
 export function cx(...classes: Array<string | false | null | undefined>): string {
   return classes.filter(Boolean).join(" ");

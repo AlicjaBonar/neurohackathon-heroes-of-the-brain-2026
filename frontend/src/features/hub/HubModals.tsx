@@ -2,17 +2,21 @@ import { Modal } from "@/components/ui/Modal";
 import { Avatar } from "@/features/avatar/Avatar";
 import type { AvatarConfig } from "@/features/avatar/avatarConfig";
 import { AvatarControls } from "@/features/avatar/AvatarControls";
-import { SESSION_MODES, type SessionMode } from "@/features/session/sessionData";
+import type { Exercise } from "@/api/types";
 import { formatOrdinal } from "@/lib/utils";
+
+const formatMinutes = (seconds: number) => `~${Math.max(1, Math.round(seconds / 60))} min`;
 
 export function ActivityModal({
   open,
   onClose,
+  exercises,
   onSelect,
 }: {
   open: boolean;
   onClose: () => void;
-  onSelect: (mode: SessionMode) => void;
+  exercises: Exercise[];
+  onSelect: (exercise: Exercise) => void;
 }) {
   return (
     <Modal
@@ -23,14 +27,15 @@ export function ActivityModal({
       description="Każdy tryb dostosowuje rytm oddechu i analizę fNIRS."
     >
       <div className="activity-choices">
-        {SESSION_MODES.map((mode, index) => (
-          <button type="button" key={mode.title} onClick={() => onSelect(mode)}>
+        {exercises.length === 0 && <p>Nie udało się pobrać listy ćwiczeń z backendu.</p>}
+        {exercises.map((exercise, index) => (
+          <button type="button" key={exercise.id} onClick={() => onSelect(exercise)}>
             <small>{formatOrdinal(index)}</small>
             <div>
-              <strong>{mode.title}</strong>
-              <span>{mode.description}</span>
+              <strong>{exercise.title}</strong>
+              <span>{exercise.description}</span>
             </div>
-            <b>{mode.duration}</b>
+            <b>{formatMinutes(exercise.duration_s)}</b>
           </button>
         ))}
       </div>

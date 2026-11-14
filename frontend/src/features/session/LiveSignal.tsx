@@ -1,48 +1,66 @@
-import { useMemo } from "react";
 import { CardHeader, GlassPanel } from "@/components/ui/Card";
+import type { SignalSample } from "./useLiveSession";
 
 const WIDTH = 550;
 const HEIGHT = 150;
 const MID_Y = 75;
-const SAMPLES = 70;
-const STEP_X = 8;
-const CURSOR_X = 420;
+const AMPLITUDE = 32;
+const MAX_Z = 2.5;
+const CAPACITY = 120;
 const GRID_LINES = [30, 75, 120];
 
-/** Height of the synthetic breathing wave at sample `index` for animation `tick`. */
-function waveY(index: number, tick: number): number {
-  const phase = tick * 0.24;
-  return MID_Y + Math.sin(index * 0.38 + phase) * 22 + Math.sin(index * 0.11) * 9;
-}
+const clamp = (value: number) => Math.max(-MAX_Z, Math.min(MAX_Z, value));
+const toX = (index: number) => (index / (CAPACITY - 1)) * WIDTH;
+const toPath = (ys: number[], offset: number) =>
+  ys.map((y, index) => `${index ? "L" : "M"}${toX(index + offset).toFixed(1)} ${y.toFixed(1)}`).join(" ");
 
-function LiveWave({ tick }: { tick: number }) {
-  const path = useMemo(
-    () =>
-      Array.from(
-        { length: SAMPLES },
-        (_, index) => `${index ? "L" : "M"}${index * STEP_X} ${waveY(index, tick)}`,
-      ).join(" "),
-    [tick],
-  );
+function LiveWave({ samples }: { samples: SignalSample[] }) {
+  const offset = CAPACITY - samples.length;
+  const signalY = samples.map((s) => MID_Y - (clamp(s.signal) / MAX_Z) * AMPLITUDE * 1.5);
+  // Pacer target (0..1 height); drawn only for the samples that have one.
+  const targetY = samples.map((s) => (s.target === null ? null : MID_Y - (s.target - 0.5) * 2 * AMPLITUDE));
+  const hasTarget = targetY.some((y) => y !== null);
+  const path = signalY.length ? toPath(signalY, offset) : "";
+  const last = signalY.length - 1;
 
   return (
-    <svg
-      viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-      preserveAspectRatio="none"
-      aria-label="Fala oddechowa i utlenowanie kory"
-    >
+    <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="none" aria-label="Fala oddechowa i ΔHbO">
       {GRID_LINES.map((y) => (
         <line key={y} x1="0" x2={WIDTH} y1={y} y2={y} />
       ))}
-      <path d={path} className="breath-wave" />
-      <path d={`${path} L${WIDTH + 2} ${HEIGHT} L0 ${HEIGHT}Z`} className="wave-fill" />
-      <line x1={CURSOR_X} x2={CURSOR_X} y1="8" y2="140" className="cursor-line" />
-      <circle cx={CURSOR_X} cy={waveY(CURSOR_X / STEP_X, tick)} r="5" className="cursor-dot" />
+      {hasTarget && (
+        <path
+          d={toPath(targetY.map((y) => y ?? MID_Y), offset)}
+          fill="none"
+          stroke="#f4a261"
+          strokeWidth="2"
+          strokeDasharray="6 5"
+          opacity=".85"
+        />
+      )}
+      {path && (
+        <>
+          <path d={path} className="breath-wave" />
+          <path d={`${path} L${WIDTH} ${HEIGHT} L${toX(offset)} ${HEIGHT}Z`} className="wave-fill" />
+          <line x1={WIDTH - 2} x2={WIDTH - 2} y1="8" y2="140" className="cursor-line" />
+          <circle cx={WIDTH - 2} cy={signalY[last]} r="5" className="cursor-dot" />
+        </>
+      )}
     </svg>
   );
 }
 
-export function LiveSignalCard({ tick, coherence }: { tick: number; coherence: number }) {
+export function LiveSignalCard({
+  samples,
+  scoreLabel,
+  score,
+  stage,
+}: {
+  samples: SignalSample[];
+  scoreLabel: string;
+  score: number | null;
+  stage: string;
+}) {
   return (
     <GlassPanel as="article" className="live-chart-card">
       <CardHeader
@@ -50,16 +68,16 @@ export function LiveSignalCard({ tick, coherence }: { tick: number; coherence: n
         title="Fala oddechowa i ΔHbO"
         aside={
           <div className="coherence">
-            <small>KOHERENCJA</small>
-            <strong>{coherence}%</strong>
+            <small>{scoreLabel}</small>
+            <strong>{score === null ? "—" : `${score}%`}</strong>
           </div>
         }
       />
       <div className="live-wave">
-        <LiveWave tick={tick} />
+        <LiveWave samples={samples} />
         <div className="wave-label">
-          <span>WYDECH</span>
-          <span>WDECH</span>
+          <span>{stage}</span>
+          <span>linia przerywana: rytm docelowy</span>
         </div>
       </div>
     </GlassPanel>

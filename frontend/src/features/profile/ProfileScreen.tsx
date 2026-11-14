@@ -2,6 +2,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { GlassPanel } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
 import { ScreenTitle, StepIndicator } from "@/components/ui/Page";
+import type { User } from "@/api/types";
 import { Avatar } from "@/features/avatar/Avatar";
 import type { AvatarConfig } from "@/features/avatar/avatarConfig";
 import { ProfileForm } from "./ProfileForm";
@@ -27,7 +28,7 @@ function AvatarPreviewPanel({ avatar }: { avatar: AvatarConfig }) {
         <Icon name="wave" size={16} /> OPTYCZNA TOMOGRAFIA KORY
       </div>
       <Avatar avatar={avatar} interactive />
-      <CalibrationBadge label="Kalibracja fNIRS" value="SCI 96%" />
+      <CalibrationBadge label="Kalibracja fNIRS" value="po podłączeniu opaski" />
     </GlassPanel>
   );
 }
@@ -35,11 +36,11 @@ function AvatarPreviewPanel({ avatar }: { avatar: AvatarConfig }) {
 export function ProfileScreen({
   avatar,
   onAvatarChange,
-  onNext,
+  onDone,
 }: {
   avatar: AvatarConfig;
   onAvatarChange: (avatar: AvatarConfig) => void;
-  onNext: () => void;
+  onDone: (user: User) => void;
 }) {
   return (
     <AppShell>
@@ -51,7 +52,7 @@ export function ProfileScreen({
       />
       <section className="split profile-grid">
         <AvatarPreviewPanel avatar={avatar} />
-        <ProfileForm avatar={avatar} onAvatarChange={onAvatarChange} onSubmit={onNext} />
+        <ProfileForm avatar={avatar} onAvatarChange={onAvatarChange} onDone={onDone} />
       </section>
     </AppShell>
   );
