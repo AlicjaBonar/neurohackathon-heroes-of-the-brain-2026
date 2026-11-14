@@ -19,10 +19,13 @@ function AvatarPreviewPanel({ avatar }: { avatar: AvatarConfig }) {
 }
 
 export function ProfileScreen({
+  user,
   avatar,
   onAvatarChange,
   onDone,
 }: {
+  /** Current user when editing an existing profile; the form starts pre-filled. */
+  user?: User | null;
   avatar: AvatarConfig;
   onAvatarChange: (avatar: AvatarConfig) => void;
   onDone: (user: User) => void;
@@ -37,7 +40,7 @@ export function ProfileScreen({
       />
       <section className="split profile-grid">
         <AvatarPreviewPanel avatar={avatar} />
-        <ProfileForm avatar={avatar} onAvatarChange={onAvatarChange} onDone={onDone} />
+        <ProfileForm user={user} avatar={avatar} onAvatarChange={onAvatarChange} onDone={onDone} />
       </section>
     </AppShell>
   );

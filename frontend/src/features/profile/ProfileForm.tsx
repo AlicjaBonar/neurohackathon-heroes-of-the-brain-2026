@@ -22,21 +22,29 @@ type SexLabel = (typeof SEXES)[number];
 const SEX_BY_LABEL: Record<SexLabel, Sex> = { Kobieta: "F", Mężczyzna: "M" };
 const NEW_PROFILE = "Nowy profil";
 
+const closestActivity = (score: number | null | undefined) =>
+  score == null
+    ? undefined
+    : ACTIVITY.reduce((best, a) => (Math.abs(a.value - score) < Math.abs(best.value - score) ? a : best));
+
 const personaLabel = (p: Persona) =>
   `${p.id.replace("demo_", "").replace("_", " ").toUpperCase()} · ${p.sex ?? "?"}, ${p.age ?? "?"} l.`;
 
 export function ProfileForm({
+  user,
   avatar,
   onAvatarChange,
   onDone,
 }: {
+  user?: User | null;
   avatar: AvatarConfig;
   onAvatarChange: (avatar: AvatarConfig) => void;
   onDone: (user: User) => void;
 }) {
-  const [name, setName] = useState("");
-  const [age, setAge] = useState("24");
-  const [height, setHeight] = useState("170");
+  const editing = user && !user.is_demo ? user : null;
+  const [name, setName] = useState(editing?.name ?? "");
+  const [age, setAge] = useState(String(editing?.derived.age ?? 24));
+  const [height, setHeight] = useState(String(editing?.height_cm ?? 170));
   // Sex and weight live in the avatar config so the 3D model follows the form.
   const sex: SexLabel = avatar.sex === "F" ? "Kobieta" : "Mężczyzna";
   const setSex = (label: SexLabel) => {
@@ -45,15 +53,25 @@ export function ProfileForm({
   };
   const weight = avatar.weight > 0 ? String(avatar.weight) : "";
   const setWeight = (value: string) => onAvatarChange({ ...avatar, weight: Number(value) });
-  const [activity, setActivity] = useState(ACTIVITY_LABELS[2]);
+  const [activity, setActivity] = useState<string>(
+    closestActivity(editing?.activity_score)?.label ?? ACTIVITY_LABELS[2],
+  );
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [persona, setPersona] = useState(NEW_PROFILE);
+  const demoId = user?.is_demo ? user.id : null;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.personas().then(setPersonas).catch(() => setPersonas([]));
-  }, []);
+    api
+      .personas()
+      .then((list) => {
+        setPersonas(list);
+        const current = list.find((p) => p.id === demoId);
+        if (current) setPersona(personaLabel(current));
+      })
+      .catch(() => setPersonas([]));
+  }, [demoId]);
 
   const personaOptions = [NEW_PROFILE, ...personas.map(personaLabel)];
   const selected = personas.find((p) => personaLabel(p) === persona);
@@ -70,7 +88,7 @@ export function ProfileForm({
         setError("Podaj imię lub pseudonim.");
         return;
       }
-      const user = await api.createUser({
+      const body = {
         name: name.trim(),
         birth_year: new Date().getFullYear() - Number(age),
         sex: avatar.sex,
@@ -78,8 +96,8 @@ export function ProfileForm({
         weight_kg: avatar.weight,
         activity_score: ACTIVITY.find((a) => a.label === activity)?.value ?? null,
         avatar: avatarToStored(avatar),
-      });
-      onDone(user);
+      };
+      onDone(editing ? await api.updateUser(editing.id, body) : await api.createUser(body));
     } catch (e) {
       setError(errorMessage(e));
     } finally {

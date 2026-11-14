@@ -18,6 +18,7 @@ const json = (method: string, body?: unknown): RequestInit => ({
 
 export const api = {
   createUser: (body: UserIn) => requestJson<User>("users", json("POST", body)),
+  updateUser: (id: string, body: UserIn) => requestJson<User>(`users/${id}`, json("PUT", body)),
   getUser: (id: string) => getJson<User>(`users/${id}`),
   dashboard: (id: string) => getJson<Dashboard>(`users/${id}/dashboard`),
   history: (id: string, metrics: string[], signal?: AbortSignal) =>

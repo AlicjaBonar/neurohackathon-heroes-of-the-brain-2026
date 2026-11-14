@@ -982,7 +982,9 @@ h1 {
   margin-left: auto;
   border-left: 1px solid #dce9e9;
   padding-left: 18px;
-  min-width: 93px;
+  /* fixed width so the divider and values line up across all cards */
+  flex: 0 0 132px;
+  width: 132px;
 }
 .metric-side strong,
 .metric-side small {
@@ -2017,7 +2019,8 @@ h1 {
   }
   .metric-side {
     padding-left: 10px;
-    min-width: 76px;
+    flex-basis: 100px;
+    width: 100px;
   }
   .summary-bars > div {
     grid-template-columns: 110px 1fr 30px;
