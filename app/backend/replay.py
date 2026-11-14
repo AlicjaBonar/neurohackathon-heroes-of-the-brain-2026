@@ -28,6 +28,7 @@ from . import metrics as M
 from .mock_source import MockSource, StepOut
 
 sys.path.insert(0, str(config.ROOT / "src"))
+from hob import pipeline as P  # noqa: E402
 from hob import signal as S  # noqa: E402
 from hob.io import list_files, load_snirf  # noqa: E402
 
@@ -96,8 +97,8 @@ class Prepared:
         if rec.missing is not None:
             i760 = np.where(rec.missing[:, None], np.nan, i760)
             i850 = np.where(rec.missing[:, None], np.nan, i850)
-        od760, od850 = S.optical_density(i760), S.optical_density(i850)
-        sci = S.scalp_coupling_index(od760, od850, fs)
+        H = P.hemo(rec, age=age)                 # MNE: OD -> SCI -> TDDR -> Beer-Lambert
+        sci = H.sci
         mean760, mean850 = np.nanmean(i760, 0), np.nanmean(i850, 0)
         p99 = np.maximum(np.nanpercentile(i760, 99, 0), np.nanpercentile(i850, 99, 0))
         flat = np.maximum(S.flatline_fraction(np.nan_to_num(i760)), S.flatline_fraction(np.nan_to_num(i850)))
@@ -113,16 +114,14 @@ class Prepared:
         self.good_pct = round(100.0 * (status[long_] == "good").mean(), 1)
         self.sci_median = round(float(np.median(sci[long_])), 3)
 
-        hbo, hbr = S.mbll(S.fill_nan(od760), S.fill_nan(od850), dist, age=age)
+        hbo, hbr = H.hbo, H.hbr
         hbo_m = S.bandpass(hbo[:, good], fs, 0.005, 0.5).mean(1)
         hbr_m = S.bandpass(hbr[:, good], fs, 0.005, 0.5).mean(1)
         breath = S.bandpass(hbo[:, good], fs, 0.05, 0.6).mean(1)
         slow = S.bandpass(hbo[:, good], fs, 0.005, 0.6).mean(1)     # for spectra (resonance, resp rate)
 
-        # heartbeats (full rate)
-        card = S.cardiac_component(hbo, fs, good)
-        hr0 = S.heart_rate_spectral(card, fs)
-        self.beats = S.detect_beats(card, fs, hr0)
+        # heartbeats: NeuroKit2 (ppg_clean + Elgendi peaks with artifact correction)
+        self.beats = P.beats(hbo, fs, good)
 
         # motion level 0..1 from the accelerometer
         acc, _ = S.split_aux(rec.aux)
@@ -451,8 +450,10 @@ class ReplaySource:
         r, pos = self.cur, self.pos
         b15 = r.beats[(r.beats > pos - 15) & (r.beats <= pos)]
         b60 = r.beats[(r.beats > pos - 60) & (r.beats <= pos)]
-        ib15, ib60 = list(np.diff(b15) * 1000), list(np.diff(b60) * 1000)
-        hr, rm, sd = M.hr_from_ibis(ib15), M.rmssd(ib60), M.sdnn(ib60)
+        hr = M.hr_from_ibis(list(np.diff(b15) * 1000))
+        h = P.hrv(b60)                                       # NeuroKit2 hrv_time (needs >= 10 beats)
+        rm = h["rmssd_ms"] if np.isfinite(h["rmssd_ms"]) else None
+        sd = h["sdnn_ms"] if np.isfinite(h["sdnn_ms"]) else None
         if hr:
             self._last_hr = hr
         span = float(min(60.0, pos))
@@ -460,9 +461,9 @@ class ReplaySource:
         w = r.window(r.slow, pos, 60)
         rate, rconf = None, 0.0
         if len(w) >= 20 * FS_OUT and not self.hold_open:
-            rr, prom = S.resp_rate_spectral(w, FS_OUT, band=(0.05, 0.6))
+            rr = P.resp_rate(w, FS_OUT)                      # NeuroKit2 rsp_rate (trough)
             if np.isfinite(rr):
-                rate, rconf = rr, float(np.clip((prom - 1.5) / 6, 0.1, 0.8))
+                rate, rconf = rr, 0.7
         rel = _rel_power(w)
         score = M.resonance_score(rel, self.res_base) if rel is not None else 0.0
         v = dict(

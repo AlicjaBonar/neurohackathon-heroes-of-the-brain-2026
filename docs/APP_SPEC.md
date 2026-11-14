@@ -246,7 +246,7 @@ Frontend animuje serce awatara na każde rzeczywiste uderzenie, a nie z interwa�
 }
 ```
 
-- `resonance.score` = 0–100, przeskalowany udział mocy 0,07–0,13 Hz względem linii bazowej osoby. W danych: spoczynek ~0,09, SPB ~0,17.
+- `resonance.score` = 0–100, przeskalowany udział mocy 0,07–0,13 Hz względem linii bazowej osoby. W danych (DOT, mediana): spoczynek ~0,07, SPB ~0,16.
 - `phase_lock` występuje tylko w ćwiczeniu z pacerem.
 - Pola z niską pewnością (`confidence` < 0,5) frontend wyszarza.
 

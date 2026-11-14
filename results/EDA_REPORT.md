@@ -3,18 +3,45 @@
 Raport z eksploracji obu zbiorów (288 plików SNIRF, 77 osób). Wszystko odtwarza się skryptami z [scripts/](../scripts/), opis w [README](../README.md).
 Liczby pochodzą z [summary.json](summary.json) i [tables/](tables/).
 
+> **Wersja 2 (przetwarzanie bibliotekami z infopacka).** Sygnał fNIRS liczy teraz MNE-Python (gęstość optyczna, SCI, korekcja ruchu TDDR, prawo Beera-Lamberta), a tętno, HRV i oddech NeuroKit2. Wyniki MNE sprawdziliśmy niezależnie w Cedalion (sekcja 0). Poprzednia, ręczna wersja dawała **~2,3× zaniżone wartości µM**; kształt sygnałów był poprawny, więc wnioski jakościowe zostają, ale liczby w µM i część statystyk poniżej są nowe. Zmiany wniosków: sekcja 0.
+
+## 0. Przetwarzanie i walidacja
+
+| Krok | Biblioteka |
+|---|---|
+| wczytanie SNIRF, gęstość optyczna, jakość kanałów (SCI), korekcja ruchu (TDDR), HbO/HbR (Beer-Lambert, DPF zależny od wieku) | **MNE-Python** ([src/hob/pipeline.py](../src/hob/pipeline.py)) |
+| detekcja uderzeń serca (`ppg_clean`, `ppg_peaks`, korekcja artefaktów), HRV (`hrv_time`), częstość oddechu (`rsp_rate`) | **NeuroKit2** |
+| niezależne sprawdzenie MNE | **Cedalion** ([scripts/04_crosscheck_cedalion.py](../scripts/04_crosscheck_cedalion.py), osobne środowisko) |
+| akcelerometr, żyroskop, brakujące próbki, przesterowanie, geometria 2D/3D | własny kod (biblioteki tego nie obsługują) |
+
+**MNE vs Cedalion** (367 dobrych kanałów z 8 losowych plików, [crosscheck_libraries.csv](tables/crosscheck_libraries.csv)):
+
+| Porównanie | Korelacja | Stosunek amplitud |
+|---|---|---|
+| HbO, HbR | 1,0000 | 0,9998 |
+| gęstość optyczna / po TDDR | 1,0000 / 0,9999 | – |
+| SCI (różne okna liczenia) | 0,88 | mediany 0,990 / 0,996 |
+| dawna ręczna implementacja vs Cedalion (HbO) | 1,0000 | **2,34** |
+
+**Co zmieniło się we wnioskach po przejściu na biblioteki:**
+- amplitudy w µM są wyższe (np. reakcja HbO na bezdech: +0,61 µM zamiast +0,51; po TDDR wzrost nie jest pełne 2,3×),
+- częstość oddechu z NeuroKit2 jest wiarygodniejsza (mediana w SPB 6,5/min; spoczynek 8,5/min w DOT, 11,5/min w supine),
+- związek skośności fali tętna z BMI **nie utrzymał się** po kontroli płci (był to najpewniej artefakt starej metody detekcji uderzeń),
+- przewidywanie BMI z cech serca **przestało działać**; za to klasyfikacja BMI ≥ 25 vs < 25 jest teraz istotna (AUC 0,69),
+- płeć AUC 0,97 (wcześniej 0,94), ciemne włosy AUC 0,73–0,76 (bez zmian).
+
 ## Najważniejsze wnioski
 
 1. **Dane są dobrej jakości.** Mediana SCI wynosi 0,98–0,99, a 91% kanałów długich w DOT i 97–99% w supine jest „dobrych”. Brakujących próbek jest średnio poniżej 0,5%.
-2. **Tętno odczytujemy z fNIRS bardzo pewnie.** Dwie niezależne metody (widmowa i detekcja uderzeń) zgadzają się z r = 0,96, a mediana wynosi ~68–70 BPM. W zbiorze 141 Hz widać pełny kształt fali tętna.
-3. **Oddech jest w sygnale.** Wolny oddech (SPB) prawie podwaja moc pasma 0,1 Hz (z 0,093 do 0,171, p = 5·10⁻¹²). HbO zmienia się w rytmie cyklu: minimum ~2 s po rozpoczęciu wdechu, maksimum ~6 s, czyli w trakcie wydechu. Synchronizacja fazy ma medianę 0,65.
+2. **Tętno odczytujemy z fNIRS bardzo pewnie.** Dwie niezależne metody (szczyt widma i detekcja uderzeń NeuroKit2) zgadzają się z r = 0,94, a mediana wynosi ~67–70 BPM. W zbiorze 141 Hz widać pełny kształt fali tętna.
+3. **Oddech jest w sygnale.** Wolny oddech (SPB) prawie podwaja moc pasma 0,1 Hz (z 0,074 do 0,161, p = 1·10⁻¹²). HbO zmienia się w rytmie cyklu: minimum ~2 s po rozpoczęciu wdechu, maksimum ~6 s, czyli w trakcie wydechu. Synchronizacja fazy ma medianę 0,69.
 4. **Koniec bezdechu ma wyraźny biomarker.** HbO i HbR rosną przez cały bezdech i mają szczyt dokładnie w momencie wdechu. W tej samej chwili jest skok w akcelerometrze. To najmocniejszy kierunek do rozwiązania otwartego zadania (nieoznaczone końce bezdechów).
 5. **Urządzenie ma automatyczne wzmocnienie.** Natężenie nie zależy od odległości źródło–detektor, a pliki nie zawierają informacji o wzmocnieniu (`detectorGain` = 0). Bezwzględne natężenie nie mówi więc wprost o skórze i tkance. Mimo to **stosunek I760/I850 wiąże się z kolorem włosów** (ρ = −0,47, istotne także po kontroli płci i korekcie FDR).
 6. **Płeć jest głównym czynnikiem zakłócającym.** Wiele surowych korelacji ze wzrostem, wagą czy czasem bezdechu znika po kontroli płci.
 7. **Z cech fNIRS da się przewidzieć:**
-   - **płeć** (AUC 0,94),
-   - **ciemne vs jasne włosy** (AUC 0,75),
-   - **słabo: BMI** (poprawa błędu o 13% względem średniej, tylko na cechach serca).
+   - **płeć** (AUC 0,97),
+   - **ciemne vs jasne włosy** (AUC 0,73–0,76),
+   - **słabo: BMI ≥ 25** (AUC 0,69; dokładnej wartości BMI już nie).
 
    **Nie da się przewidzieć:** typu skóry, poziomu aktywności ani wieku (próba ma prawie samych młodych dorosłych).
 
@@ -84,13 +111,13 @@ Przykładowe nagrania: surowe natężenie, HbO/HbR, pasmo oddechowe, składowa s
 
 - HbO oscyluje w rytmie zadanego oddechu: minimum ~2 s po rozpoczęciu wdechu, szczyt ~6 s (w trakcie wydechu). HbR prawie się nie zmienia.
 - **Akcelerometr (oś x) też pokazuje cykl,** czyli ruch głowy przy oddechu jest mierzalny.
-- Dominujący rytm HbO w całym pliku ma medianę 5,55/min, a 54% plików mieści się w 5–7/min. Część pliku SPB to swobodny oddech (przerwy po 60 s, początek i koniec), więc pełny plik nie jest czystym 6/min.
+- Dominujący rytm HbO w całym pliku ma medianę 5,7/min, a 68% plików mieści się w 5–7/min. Częstość oddechu z NeuroKit2 (`rsp_rate`) ma medianę 6,5/min (54% plików w 5–7/min). Część pliku SPB to swobodny oddech (przerwy po 60 s, początek i koniec), więc pełny plik nie jest czystym 6/min.
 
 ![](figures/09b_spb_metrics.png)
 
-**Ograniczenie:** prosta częstość oddechu z widma działa tylko umiarkowanie.
-- **fNIRS:** mediana 9,7/min w RS i 16/min w supine BS. Wartości są wiarygodne, ale nie zgadzają się z akcelerometrem (ρ ≈ 0).
-- **Akcelerometr:** metoda widmowa łapie szum (~25–30/min). Uśrednianie względem cykli pokazuje, że sygnał oddechu w nim jest, ale trzeba go wyciągać lepszą metodą, np. PCA osi, dolnoprzepustowy filtr, detekcja szczytów.
+**Ograniczenie:** częstość oddechu jest tylko umiarkowanie dokładna.
+- **fNIRS (NeuroKit2):** mediana 8,5/min w DOT RS i 11,5/min w supine BS, czyli wartości fizjologiczne. Słabo zgadza się z akcelerometrem (ρ = 0,31).
+- **Akcelerometr:** NeuroKit2 na jednej osi daje ~22–24/min, czyli głównie szum. Uśrednianie względem cykli pokazuje, że sygnał oddechu w nim jest, ale trzeba go wyciągać lepszą metodą, np. PCA osi, dolnoprzepustowy filtr, detekcja szczytów.
 
 ![](figures/13_hr_hrv_resp.png)
 ![](figures/14_resp_motion.png)
@@ -102,9 +129,9 @@ Przykładowe nagrania: surowe natężenie, HbO/HbR, pasmo oddechowe, składowa s
 | Pomiar | Wynik |
 |---|---|
 | supine: czas bezdechu (118 znanych końców) | mediana 21,5 s, zakres 5,3–105,9 s; drugi bezdech zwykle dłuższy od pierwszego |
-| supine: odpowiedź HbO na bezdech | mediana szczytu +0,51 µM, ~27 s po starcie |
+| supine: odpowiedź HbO na bezdech | mediana szczytu +0,61 µM, ~27 s po starcie |
 | **supine: koniec bezdechu** | **HbO i HbR rosną monotonicznie do momentu wdechu; szczyt w t = 0; skok akcelerometru w t = 0** |
-| DOT: krótki bezdech 10 s | spadek HbO w trakcie, potem odbicie z szczytem +0,28 µM ~16 s po starcie (6 s po wdechu) |
+| DOT: krótki bezdech 10 s | spadek HbO w trakcie, potem odbicie ze szczytem +0,32 µM ~16 s po starcie (6 s po wdechu); maksymalny bezdech: szczyt +0,56 µM ~61 s po starcie |
 | DOT: maksymalny bezdech | HbR rośnie przez ~60 s; akcelerometr wyraźnie cichnie przez pierwsze ~25 s (brak ruchów oddechowych), potem ruch wraca |
 
 **Proponowany detektor końca bezdechu:**
@@ -119,24 +146,24 @@ Czas bezdechu nie zależy od wieku ani aktywności. Silnie zależy od płci (ρ 
 
 ## 6. Serce: tętno, HRV, kształt fali
 
-- Tętno z fNIRS jest wiarygodne: dwie metody zgadzają się z r = 0,96.
-- **Rytm dobowy (DOT):** tętno w spoczynku wynosi 68,4 → 67,7 → **71,8** → 69,9 BPM w sesjach 1–4 (Friedman p = 0,007). Najwyższe jest ~15:00, po obiedzie. Wtedy też RMSSD jest najniższe. Ruch głowy rośnie z każdą sesją.
+- Tętno z fNIRS jest wiarygodne: dwie metody zgadzają się z r = 0,94.
+- **Rytm dobowy (DOT):** tętno w spoczynku wynosi 68,6 → 68,1 → **71,8** → 70,0 BPM w sesjach 1–4 (Friedman p = 0,005). Najwyższe jest ~15:00, po obiedzie. Wtedy też RMSSD jest najniższe. Ruch głowy rośnie z każdą sesją.
 
 ![](figures/15_dot_day_trends.png)
 
 **Fala tętna (supine 141 Hz):**
-- czas narastania słabo rośnie z wiekiem (ρ = 0,28; p = 0,035; efekt zależy głównie od 4 starszych osób),
-- skośność fali wiąże się z BMI (ρ = 0,45, istotne po FDR i po kontroli płci).
+- czas narastania słabo rośnie z wiekiem (ρ = 0,29; p = 0,03; nieistotne po FDR; efekt zależy głównie od 4 starszych osób),
+- skośność fali tylko słabo wiąże się z wagą i BMI (ρ = 0,34 / 0,29; nieistotne po FDR i po kontroli płci).
 
 ![](figures/12_pulse_waveform.png)
 
-**Wydolność (wzór Jurca) z tętnem z fNIRS:** średnio 13,0 ± 2,6 MET. Tętno spoczynkowe nie koreluje jednak z aktywnością ani z BMI (ρ ≈ −0,12, nieistotne). W tej próbie tętno nie jest więc dobrym wskaźnikiem formy.
+**Wydolność (wzór Jurca) z tętnem z fNIRS:** średnio 12,9 ± 2,6 MET. Tętno spoczynkowe nie koreluje jednak z aktywnością ani z BMI (ρ = −0,15 i −0,13, nieistotne). W tej próbie tętno nie jest więc dobrym wskaźnikiem formy.
 
 ![](figures/19_crf_jurca.png)
 
 ## 7. Korelacje z cechami osób
 
-Wykonano 594 testy Spearmana (cechy fNIRS uśrednione per osoba × cechy osób). 17 z nich przechodzi korektę FDR (q < 0,05), wszystkie w supine. W DOT przy n = 17 nic nie przechodzi.
+Wykonano 594 testy Spearmana (cechy fNIRS uśrednione per osoba × cechy osób). 18 z nich przechodzi korektę FDR (q < 0,05), wszystkie w supine. W DOT przy n = 17 nic nie przechodzi.
 
 ![](figures/16_corr_features_subjects_supine.png)
 
@@ -145,12 +172,12 @@ Najsilniejsze surowe efekty, w większości związane z płcią:
 | Cecha fNIRS | Cecha osoby | ρ |
 |---|---|---|
 | amplituda tętna HbO | wzrost / płeć | +0,63 / +0,59 |
+| zmienność HbO (odch. std.) | płeć / wzrost | +0,62 / +0,61 |
 | średni czas bezdechu | płeć | +0,57 |
 | log I850 | płeć | −0,51 |
 | I760/I850 | kolor włosów | −0,46 |
-| skośność fali tętna | BMI | +0,46 |
 
-**Po kontroli płci** ([partial_corr_sex.csv](tables/partial_corr_sex.csv)) przetrwały dwa efekty: **I760/I850 a kolor włosów** (−0,47) oraz **skośność fali tętna a BMI** (+0,45), oba z q = 0,027.
+**Po kontroli płci** ([partial_corr_sex.csv](tables/partial_corr_sex.csv)) przetrwał jeden efekt: **I760/I850 a kolor włosów** (−0,47, q = 0,034). Związek skośności fali tętna z BMI, istotny w poprzedniej wersji, po przejściu na NeuroKit2 zniknął.
 
 ![](figures/21_partial_corr_supine.png)
 ![](figures/17_top_correlations.png)
@@ -164,17 +191,19 @@ Model: regresja grzbietowa lub logistyczna, 10-krotna walidacja krzyżowa po oso
 
 | Cel (supine, n = 60) | Wynik | Czy lepsze od losowego? |
 |---|---|---|
-| Płeć | AUC 0,94 (optyka: 0,90; serce: 0,82) | **tak** |
-| Ciemne vs jasne włosy | AUC 0,75 (optyka) | **tak** |
-| BMI | MAE o 13% mniejsze niż przy przewidywaniu średniej (cechy serca) | **tak, słabo** |
-| BMI ≥ 25 | AUC 0,64 (serce) | **tak, słabo** |
-| Wiek | 3% poprawy | prawie bez znaczenia (mała zmienność wieku) |
-| Fitzpatrick (skóra) | AUC 0,29–0,52 | **nie** |
-| Aktywność fizyczna | AUC 0,41–0,58 | **nie** |
+| Płeć | AUC 0,97 (optyka: 0,92; oddech/naczynia: 0,85; serce: 0,80) | **tak** |
+| Ciemne vs jasne włosy | AUC 0,73 (wszystkie cechy), 0,76 (optyka) | **tak** |
+| BMI ≥ 25 | AUC 0,69 (wszystkie cechy) | **tak, słabo** |
+| BMI (wartość) | najlepiej 3% mniejszy błąd niż średnia (oddech/naczynia) | praktycznie nie |
+| Wiek | 0–1% poprawy | **nie** (mała zmienność wieku) |
+| Fitzpatrick (skóra) | AUC 0,29–0,60 | **nie** |
+| Aktywność fizyczna | AUC 0,22–0,57 | **nie** |
+
+W DOT (n = 17) kilka modeli wyszło „istotnie” (np. BMI ≥ 25 AUC 0,82–0,90), ale przy 17 osobach i wielu testowanych kombinacjach traktujemy to jako przypadek.
 
 **Wniosek dla awatara:**
 - **kolor włosów** (ciemny/jasny) i **płeć** dają się odczytać,
-- **sylwetka** (BMI) tylko orientacyjnie,
+- **sylwetka** tylko orientacyjnie (BMI ≥ 25: tak/nie),
 - **kolor skóry** i **poziom aktywności** nie (przy tej próbie).
 
 Najmocniejsze, w pełni wiarygodne elementy awatara to **stan ciała w czasie rzeczywistym:** tętno, rytm oddechu i wykrywanie bezdechu.
@@ -196,5 +225,5 @@ Najmocniejsze, w pełni wiarygodne elementy awatara to **stan ciała w czasie rz
    - faza oddechu z HbO w oknie przesuwnym,
    - walidacja na znacznikach cykli SPB (1020 cykli),
    - fuzja z akcelerometrem (PCA osi).
-3. **Tętno i HRV na żywo** do awatara: metoda już działa (r = 0,96).
+3. **Tętno i HRV na żywo** do awatara: metoda już działa (r = 0,94, NeuroKit2).
 4. **Moduł jakości sygnału:** przesterowanie, ciemne kanały, SCI, ruch. Można go pokazać jako ostrzeżenie w aplikacji.

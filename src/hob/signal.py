@@ -38,6 +38,9 @@ def mbll(od760: np.ndarray, od850: np.ndarray, distance_mm: np.ndarray,
          age: float | None = None, ppf: float = 6.0) -> tuple[np.ndarray, np.ndarray]:
     """Modified Beer-Lambert law -> (HbO, HbR) concentration changes in micromolar.
 
+    DEPRECATED: gives values ~2.3x smaller than MNE-Python and Cedalion (which agree with each
+    other); use hob.pipeline.hemo. Kept only for scripts/04_crosscheck_cedalion.py.
+
     od760/od850: (n_samples, n_pairs); distance_mm: (n_pairs,).
     If age is given an age-dependent DPF is used, otherwise a constant `ppf`.
     """
