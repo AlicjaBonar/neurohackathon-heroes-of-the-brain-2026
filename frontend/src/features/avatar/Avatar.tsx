@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cx } from "@/lib/utils";
 import type { AvatarConfig } from "./avatarConfig";
-import { AvatarScene, type Gesture } from "./avatarScene";
+import { armHeight, AvatarScene, type Gesture } from "./avatarScene";
 
 const GESTURES: { id: Gesture; label: string }[] = [
   { id: "six_seven", label: "Do 67" },
@@ -23,16 +23,24 @@ function Avatar3D({
   avatar,
   interactive,
   introGesture,
+  pace,
+  deepBreathing,
   sceneRef,
 }: {
   avatar: AvatarConfig;
   interactive: boolean;
   introGesture?: Gesture;
+  pace: number | null;
+  deepBreathing: boolean;
   sceneRef: React.RefObject<AvatarScene | null>;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const latest = useRef(avatar);
   latest.current = avatar;
+  const latestPace = useRef(pace);
+  latestPace.current = pace;
+  const latestDeep = useRef(deepBreathing);
+  latestDeep.current = deepBreathing;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -41,6 +49,8 @@ function Avatar3D({
     sceneRef.current = scene;
     if (interactive) scene.enableRotation();
     scene.setAppearance(latest.current);
+    scene.setPace(latestPace.current);
+    scene.setDeepBreathing(latestDeep.current);
     void scene.setModel(latest.current).then(() => {
       if (introGesture) void scene.playGesture(introGesture, () => {});
     });
@@ -56,6 +66,14 @@ function Avatar3D({
   useEffect(() => {
     void sceneRef.current?.setModel(avatar);
   }, [avatar.sex, avatar.texture, avatar.length]);
+
+  useEffect(() => {
+    sceneRef.current?.setDeepBreathing(deepBreathing);
+  }, [deepBreathing, sceneRef]);
+
+  useEffect(() => {
+    sceneRef.current?.setPace(pace);
+  }, [pace, sceneRef]);
 
   useEffect(() => {
     sceneRef.current?.setAppearance(avatar);
@@ -77,6 +95,9 @@ export function Avatar({
   aura = false,
   interactive = false,
   introGesture,
+  pace = null,
+  deepBreathing = false,
+  overlay,
 }: {
   avatar: AvatarConfig;
   breathing?: boolean;
@@ -85,6 +106,15 @@ export function Avatar({
   interactive?: boolean;
   /** Gesture played once, as soon as the model has loaded. */
   introGesture?: Gesture;
+  /**
+   * Breathing pacer position (0..1, as `target_phase` from the backend): 0-0.5 inhale with the
+   * arms rising, 0.5-1 exhale with the arms lowering. Null leaves the avatar breathing idly.
+   */
+  pace?: number | null;
+  /** Loops the deep-breath arm movement (any tempo) instead of following `pace`. */
+  deepBreathing?: boolean;
+  /** Drawn over the avatar (e.g. the rest countdown). */
+  overlay?: ReactNode;
 }) {
   const sceneRef = useRef<AvatarScene | null>(null);
   const [playing, setPlaying] = useState<Gesture | null>(null);
@@ -115,9 +145,12 @@ export function Avatar({
           avatar={avatar}
           interactive={interactive}
           introGesture={introGesture}
+          pace={pace === null ? null : armHeight(pace)}
+          deepBreathing={deepBreathing}
           sceneRef={sceneRef}
         />
       </div>
+      {overlay && <div className="avatar-overlay">{overlay}</div>}
       {interactive && (
         <div className="avatar-gestures">
           <small>Przeciągnij, aby obrócić · dwuklik resetuje</small>

@@ -85,6 +85,17 @@ function LiveMetricCard({ metric }: { metric: Metric }) {
   );
 }
 
+/** Red countdown that covers the avatar during the rest between breathing sets. */
+function RestTimer({ seconds, label, hint }: { seconds: number; label: string; hint: string }) {
+  return (
+    <div className="rest-timer" role="timer" aria-label={`${label}, jeszcze ${seconds} sekund`}>
+      <small>{label}</small>
+      <strong>{seconds}</strong>
+      <span>{hint}</span>
+    </div>
+  );
+}
+
 function BreathingPanel({
   state,
   avatar,
@@ -98,9 +109,17 @@ function BreathingPanel({
   onEndHold: () => void;
   onEnd: () => void;
 }) {
-  const { frame, phase, phaseStartT, phaseDuration } = state;
+  const { frame, phase, phaseStartT, phaseDuration, rest, lead, hold } = state;
   const stage = frame ? (frame.pacer ?? frame.breath).stage : null;
   const elapsed = frame ? Math.max(0, frame.t - phaseStartT) : 0;
+  // The pacer drives the arms: up over the 4.5 s inhale, down over the 5.5 s exhale.
+  const pace = frame?.pacer ? frame.pacer.target_phase : null;
+  const restLeft = rest && frame ? Math.max(0, Math.ceil(rest.duration - (frame.t - rest.startT))) : null;
+  const leadLeft = lead && frame ? Math.max(0, Math.ceil(lead.duration - (frame.t - lead.startT))) : null;
+  // Short holds: deep breaths between holds, then a red "BEZDECH" countdown over the avatar.
+  const holdLeft = hold && frame ? Math.max(0, Math.ceil(hold.duration - (frame.t - hold.startT))) : null;
+  const holding = holdLeft !== null && holdLeft > 0;
+  const deepBreathing = phase === "short_holds" && !holding;
   const progress = phaseDuration ? Math.min(100, (elapsed / phaseDuration) * 100) : null;
   return (
     <GlassPanel className={cx("breathing-panel", "active")}>
@@ -108,9 +127,32 @@ function BreathingPanel({
         <span>{stage ? STAGE_LABELS[stage] : "ŁĄCZENIE…"}</span>
         <strong>{formatDuration(Math.floor(elapsed))}</strong>
       </div>
-      <Avatar breathing={stage !== null && stage !== "hold"} aura avatar={avatar} />
+      <Avatar
+        breathing={!pace && stage !== null && stage !== "hold"}
+        aura
+        avatar={avatar}
+        pace={holding ? 0 : pace}
+        deepBreathing={deepBreathing}
+        overlay={
+          holding ? (
+            <RestTimer seconds={holdLeft} label="BEZDECH" hint="wstrzymaj oddech" />
+          ) : (
+            restLeft !== null && (
+              <RestTimer seconds={restLeft} label="PRZERWA" hint="s do kolejnej serii" />
+            )
+          )
+        }
+      />
       <div className="phase-info">
-        <span>{phase ? (PHASE_LABELS[phase] ?? phase) : "Przygotowanie"}</span>
+        <span>
+          {leadLeft !== null
+            ? leadLeft > 0
+              ? `Seria 1 za ${leadLeft} s – oddychaj swobodnie`
+              : "Seria 1 zaraz się zacznie…"
+            : phase
+              ? (PHASE_LABELS[phase] ?? phase)
+              : "Przygotowanie"}
+        </span>
         {progress !== null && <div className="phase-progress"><ProgressBar value={progress} /></div>}
       </div>
       <div className="avatar-session-controls">

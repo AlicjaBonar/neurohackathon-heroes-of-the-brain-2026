@@ -11,6 +11,16 @@ type Clip = Record<string, NodeTrack>;
 
 export type Gesture = "six_seven" | "deep_breath" | "namaste" | "wave";
 
+/** Arm height for a pacer position: rises over the inhale (0-0.5), falls over the exhale (0.5-1), eased. */
+export function armHeight(targetPhase: number) {
+  const linear = targetPhase < 0.5 ? targetPhase * 2 : (1 - targetPhase) * 2;
+  return linear * linear * (3 - 2 * linear);
+}
+
+/** Free-running deep breath: 4.5 s inhale, 5.5 s exhale. */
+const DEEP_BREATH_S = 10;
+const DEEP_INHALE_S = 4.5;
+
 const BASE = `${import.meta.env.BASE_URL}avatar/`;
 const loader = new GLTFLoader();
 const glbCache = new Map<string, Promise<THREE.Group>>();
@@ -69,6 +79,11 @@ export class AvatarScene {
   private rest = new Map<string, Rest>();
   private clips: Record<string, Clip> = {};
   private gesture: { name: Gesture; start: number; onDone: () => void } | null = null;
+  /** Target arm height (0 = down, 1 = raised) while following a breathing pacer; null = idle. */
+  private paceTarget: number | null = null;
+  private paceHeight = 0;
+  private autoDeepBreath = false;
+  private lastFrameTime = performance.now();
   private yaw = 0;
   private pitch = 0;
   private modelHeight = 1.7;
@@ -127,6 +142,19 @@ export class AvatarScene {
       canvas.removeEventListener("pointercancel", up);
       canvas.removeEventListener("dblclick", reset);
     });
+  }
+
+  /**
+   * Follows a breathing pacer: `height` 0..1 is how far the arms are raised (deep-breath pose).
+   * Pass null to go back to the idle breathing animation.
+   */
+  setPace(height: number | null) {
+    this.paceTarget = height;
+  }
+
+  /** Loops the deep-breath arm movement on its own clock (no pacer needed). */
+  setDeepBreathing(on: boolean) {
+    this.autoDeepBreath = on;
   }
 
   /** Plays a one-shot gesture, then returns to idle breathing. */
@@ -249,6 +277,25 @@ export class AvatarScene {
     }
   }
 
+  /** Arms from the rest pose towards the "up" pose of the deep-breath animation, chest swelling with them. */
+  private applyPace(now: number) {
+    const dt = Math.min(0.1, (now - this.lastFrameTime) / 1000);
+    // Pacer frames arrive at ~10 Hz; smooth them so the arms move fluidly.
+    this.paceHeight += (this.paceTarget! - this.paceHeight) * (1 - Math.exp(-dt * 14));
+    const h = this.paceHeight;
+    const axis = (x: number, y: number, z: number, deg: number) =>
+      new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(x, y, z), THREE.MathUtils.degToRad(deg));
+    for (const [side, sign] of [["R", -1], ["L", 1]] as const) {
+      const shoulderUp = axis(0, 0, 1, sign * 160).multiply(axis(1, 0, 0, -8));
+      const elbowUp = axis(0, 0, 1, sign * 25);
+      const shoulder = this.nodes.get(`shoulder_${side}`);
+      const elbow = this.nodes.get(`elbow_${side}`);
+      shoulder?.quaternion.identity().slerp(shoulderUp, h);
+      elbow?.quaternion.identity().slerp(elbowUp, h);
+    }
+    this.nodes.get("chest")?.scale.set(1 + 0.02 * h, 1 + 0.03 * h, 1 + 0.07 * h);
+  }
+
   private resetPose() {
     for (const [name, rest] of this.rest) {
       const node = this.nodes.get(name);
@@ -276,8 +323,15 @@ export class AvatarScene {
           this.applyClip(clip, t, false);
         }
       }
-      if (!this.gesture) this.applyClip(this.clips.breathing, (now - this.start) / 1000, true);
+      if (this.autoDeepBreath) {
+        const u = ((now - this.start) / 1000) % DEEP_BREATH_S;
+        const phase = u < DEEP_INHALE_S ? (u / DEEP_INHALE_S) * 0.5 : 0.5 + ((u - DEEP_INHALE_S) / (DEEP_BREATH_S - DEEP_INHALE_S)) * 0.5;
+        this.paceTarget = armHeight(phase);
+      }
+      if (!this.gesture && this.paceTarget !== null) this.applyPace(now);
+      else if (!this.gesture) this.applyClip(this.clips.breathing, (now - this.start) / 1000, true);
     }
+    this.lastFrameTime = now;
 
     this.spin.rotation.set(this.pitch, this.yaw, 0, "YXZ");
     this.renderer.render(this.scene, this.camera);

@@ -33,6 +33,12 @@ export type LiveState = {
   samples: SignalSample[];
   events: EventMsg[];
   pendingCommand: EventMsg | null;
+  /** Countdown between breathing sets: set at the end of a paced set, cleared when pacing resumes. */
+  rest: { startT: number; duration: number } | null;
+  /** Countdown to the first paced set; cleared when the pacer starts. */
+  lead: { startT: number; duration: number } | null;
+  /** A short breath hold in progress (from the hold_start event), with its target length. */
+  hold: { startT: number; duration: number } | null;
   summary: Summary | null;
 };
 
@@ -49,8 +55,17 @@ const INITIAL: LiveState = {
   samples: [],
   events: [],
   pendingCommand: null,
+  rest: null,
+  lead: null,
+  hold: null,
   summary: null,
 };
+
+/** Paced breathing: sets of 5 breaths, then a 60 s rest (docs / backend exercises.plan). */
+const SETS = 3;
+const REST_S = 60;
+/** Free breathing before the first set (backend exercises.plan). */
+const LEAD_IN_S = 30;
 
 /** Target breath height (0..1) for a pacer phase: 0 = start of inhale, 0.5 = peak. */
 const targetHeight = (phase: number) => (1 - Math.cos(2 * Math.PI * phase)) / 2;
@@ -93,6 +108,9 @@ export function useLiveSession({
     let cancelled = false;
     let protocol: string[] = [];
     let step = 0;
+    let phaseName: string | null = null;
+    let pacedNow = false;
+    let setsDone = 0;
     finishingRef.current = false;
     samplesRef.current = [];
     setState(INITIAL);
@@ -105,7 +123,25 @@ export function useLiveSession({
         case "frame": {
           const target = msg.pacer ? targetHeight(msg.pacer.target_phase) : null;
           samplesRef.current = [...samplesRef.current, { signal: msg.breath.signal, target }].slice(-BUFFER);
-          setState((s) => ({ ...s, frame: msg, samples: samplesRef.current }));
+          // A paced set has just ended -> start the rest countdown (not after the last set).
+          let rest: LiveState["rest"] | undefined;
+          if (phaseName === "resonance_breathing") {
+            if (msg.pacer) {
+              pacedNow = true;
+              rest = null;
+            } else if (pacedNow) {
+              pacedNow = false;
+              setsDone += 1;
+              rest = setsDone < SETS ? { startT: msg.t, duration: REST_S } : null;
+            }
+          }
+          setState((s) => ({
+            ...s,
+            frame: msg,
+            samples: samplesRef.current,
+            lead: msg.pacer ? null : s.lead,
+            ...(rest !== undefined && { rest }),
+          }));
           break;
         }
         case "vitals":
@@ -118,6 +154,12 @@ export function useLiveSession({
           setState((s) => ({
             ...s,
             events: [...s.events.slice(-19), msg],
+            hold:
+              msg.name === "hold_start" && msg.data?.kind === "short"
+                ? { startT: msg.t, duration: Number(msg.data.target_s ?? 10) }
+                : msg.name === "hold_end_detected"
+                  ? null
+                  : s.hold,
             pendingCommand:
               msg.name === "command_issued"
                 ? msg
@@ -128,8 +170,15 @@ export function useLiveSession({
           break;
         case "phase":
           if (msg.state === "started") {
+            phaseName = msg.phase;
+            pacedNow = false;
+            setsDone = 0;
             setState((s) => ({
               ...s,
+              rest: null,
+              hold: null,
+              lead:
+                msg.phase === "resonance_breathing" ? { startT: msg.t, duration: LEAD_IN_S } : null,
               status: "running",
               phase: msg.phase,
               phaseStartT: msg.t,

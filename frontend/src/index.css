@@ -393,9 +393,6 @@ h1 {
 .is-breathing .oxygen-bubble {
   animation: breatheBubble 10s ease-in-out infinite;
 }
-.is-breathing .avatar {
-  animation: breatheBody 10s ease-in-out infinite;
-}
 
 .form-panel {
   min-height: 560px;
@@ -1442,15 +1439,6 @@ h1 {
     opacity: 1;
   }
 }
-@keyframes breatheBody {
-  0%,
-  100% {
-    transform: scaleX(0.97);
-  }
-  45% {
-    transform: scaleX(1.035);
-  }
-}
 @keyframes phase {
   0% {
     left: 0;
@@ -1784,13 +1772,7 @@ h1 {
   top: 18% !important;
 }
 
-.is-breathing .avatar {
-  animation: avatarZoom 10s ease-in-out infinite;
-}
 
-.is-breathing .pedestal {
-  animation: pedestalZoom 10s ease-in-out infinite;
-}
 
 .avatar-session-controls {
   position: absolute;
@@ -1849,27 +1831,7 @@ h1 {
   text-align: center;
 }
 
-@keyframes avatarZoom {
-  0%,
-  100% {
-    transform: scale(0.9);
-  }
-  45%,
-  55% {
-    transform: scale(1.09);
-  }
-}
 
-@keyframes pedestalZoom {
-  0%,
-  100% {
-    transform: scale(0.94);
-  }
-  45%,
-  55% {
-    transform: scale(1.06);
-  }
-}
 
 @media (max-width: 950px) {
   .split,
@@ -2237,4 +2199,42 @@ h1 {
 }
 .summary-quality {
   opacity: 0.7;
+}
+
+.avatar-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.rest-timer {
+  width: 250px;
+  height: 330px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 4px;
+  border-radius: 28px;
+  color: #dc2626;
+  background: rgba(255, 245, 245, 0.94);
+  border: 2px solid rgba(220, 38, 38, 0.35);
+  box-shadow: 0 18px 50px rgba(220, 38, 38, 0.22);
+  backdrop-filter: blur(6px);
+}
+.rest-timer small {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 3px;
+}
+.rest-timer strong {
+  font-size: 110px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.rest-timer span {
+  font-size: 12px;
+  font-weight: 700;
+  color: #b91c1c;
 }
