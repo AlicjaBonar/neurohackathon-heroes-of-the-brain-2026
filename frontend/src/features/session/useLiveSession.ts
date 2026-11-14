@@ -13,12 +13,26 @@ import type {
   VitalsMsg,
 } from "@/api/types";
 
-/** Number of breath samples kept for the live chart (10 Hz -> 12 s). */
-const BUFFER = 120;
+/** Number of samples kept for the live chart (10 Hz -> 30 s, three resonance breaths). */
+export const BUFFER = 300;
 /** Length of baseline_pre; the real 120 s default would make the demo drag. */
 const BASELINE_S = 20;
 
-export type SignalSample = { signal: number; target: number | null };
+/** One 10 Hz point of every live signal; `null` where the source has no value yet. */
+export type SignalSample = {
+  /** Breathing wave from fNIRS (z-scored). */
+  breath: number;
+  /** Pacer target height 0..1, only during a paced set. */
+  target: number | null;
+  hbo: number;
+  hbr: number;
+  /** Instantaneous heart rate from the last inter-beat interval [bpm]. */
+  hr: number | null;
+  /** Movement level 0..1 (accelerometer). */
+  motion: number;
+  /** Latest phase-lock 0..1 (vitals, 1 Hz; held between updates). */
+  lock: number | null;
+};
 
 export type LiveState = {
   status: "connecting" | "running" | "finishing" | "done" | "error";
@@ -88,6 +102,7 @@ export function useLiveSession({
   const sessionIdRef = useRef<string | null>(null);
   const samplesRef = useRef<SignalSample[]>([]);
   const finishingRef = useRef(false);
+  const lockRef = useRef<number | null>(null);
 
   const finish = useCallback(async () => {
     const sid = sessionIdRef.current;
@@ -113,6 +128,7 @@ export function useLiveSession({
     let setsDone = 0;
     finishingRef.current = false;
     samplesRef.current = [];
+    lockRef.current = null;
     setState(INITIAL);
 
     const handle = (msg: ServerMsg) => {
@@ -122,7 +138,16 @@ export function useLiveSession({
           break;
         case "frame": {
           const target = msg.pacer ? targetHeight(msg.pacer.target_phase) : null;
-          samplesRef.current = [...samplesRef.current, { signal: msg.breath.signal, target }].slice(-BUFFER);
+          const sample: SignalSample = {
+            breath: msg.breath.signal,
+            target,
+            hbo: msg.hb.hbo_uM,
+            hbr: msg.hb.hbr_uM,
+            hr: msg.hr_instant ?? null,
+            motion: msg.motion.level,
+            lock: lockRef.current,
+          };
+          samplesRef.current = [...samplesRef.current, sample].slice(-BUFFER);
           // A paced set has just ended -> start the rest countdown (not after the last set).
           let rest: LiveState["rest"] | undefined;
           if (phaseName === "resonance_breathing") {
@@ -145,6 +170,7 @@ export function useLiveSession({
           break;
         }
         case "vitals":
+          lockRef.current = msg.phase_lock?.value ?? null;
           setState((s) => ({ ...s, vitals: msg }));
           break;
         case "quality":
@@ -172,6 +198,7 @@ export function useLiveSession({
           if (msg.state === "started") {
             phaseName = msg.phase;
             pacedNow = false;
+            lockRef.current = null;
             setsDone = 0;
             setState((s) => ({
               ...s,

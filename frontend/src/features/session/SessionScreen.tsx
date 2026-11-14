@@ -1,89 +1,15 @@
 import { useEffect } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { BackButton, Button } from "@/components/ui/Button";
-import { GlassPanel, ProgressBar, ValueWithUnit } from "@/components/ui/Card";
+import { GlassPanel, ProgressBar } from "@/components/ui/Card";
 import type { Exercise, SourceIn, Summary } from "@/api/types";
 import { Avatar } from "@/features/avatar/Avatar";
 import type { AvatarConfig } from "@/features/avatar/avatarConfig";
-import { cx, formatDuration, formatTrend, type TrendDirection } from "@/lib/utils";
-import { describeEvent, isLowConfidence, PHASE_LABELS, STAGE_LABELS } from "./labels";
+import { cx, formatDuration } from "@/lib/utils";
+import { describeEvent, PHASE_LABELS, STAGE_LABELS } from "./labels";
 import { LiveSignalCard } from "./LiveSignal";
 import { useLiveSession, type LiveState } from "./useLiveSession";
-
-type Metric = {
-  tone: "hrv" | "hr" | "aux";
-  label: string;
-  value: string;
-  unit: string;
-  delta?: { direction: TrendDirection; text: string };
-  note: string;
-  simulated: boolean;
-  dim: boolean;
-};
-
-function buildMetrics({ vitals, frame }: LiveState): Metric[] {
-  const hr = vitals?.hr;
-  const hrv = vitals?.hrv;
-  const vs = vitals?.vs_baseline;
-  const rmssdDelta = vs?.rmssd_delta_pct;
-  const hrDelta = vs?.hr_delta_bpm;
-  return [
-    {
-      tone: "hrv",
-      label: "HRV • RMSSD",
-      value: hrv?.rmssd_ms ? hrv.rmssd_ms.toFixed(0) : "—",
-      unit: " ms",
-      delta:
-        rmssdDelta === undefined
-          ? undefined
-          : { direction: rmssdDelta >= 0 ? "up" : "down", text: `${rmssdDelta > 0 ? "+" : ""}${rmssdDelta}%` },
-      note: hrv?.rmssd_ms ? "vs. pomiar spoczynkowy" : "pojawi się po ok. 30 s",
-      simulated: hrv?.source === "simulated",
-      dim: isLowConfidence(hrv?.confidence),
-    },
-    {
-      tone: "hr",
-      label: "TĘTNO",
-      value: hr?.bpm ? hr.bpm.toFixed(0) : "—",
-      unit: " BPM",
-      delta:
-        hrDelta === undefined
-          ? undefined
-          : { direction: hrDelta >= 0 ? "up" : "down", text: `${hrDelta > 0 ? "+" : ""}${hrDelta}` },
-      note: hr?.frozen ? "wstrzymane – ruch" : "vs. pomiar spoczynkowy",
-      simulated: hr?.source === "simulated",
-      dim: isLowConfidence(hr?.confidence) || !!hr?.frozen,
-    },
-    {
-      tone: "aux",
-      label: "RUCH AUX",
-      value: frame ? Math.round(frame.motion.level * 100).toString() : "—",
-      unit: "%",
-      note: frame ? (frame.motion.still ? "bezruch – pomiar ważny" : "ruch – pomiar wstrzymany") : "",
-      simulated: frame?.motion.source === "simulated",
-      dim: false,
-    },
-  ];
-}
-
-function LiveMetricCard({ metric }: { metric: Metric }) {
-  return (
-    <GlassPanel as="article" className={cx(metric.tone, metric.dim && "low-confidence")}>
-      <div>
-        <small>
-          {metric.label}
-          {metric.simulated && <span className="sim-tag" title="Wartość symulowana">SYM</span>}
-        </small>
-        <ValueWithUnit
-          value={metric.delta ? `${formatTrend(metric.delta.direction, metric.delta.text)} · ${metric.value}` : metric.value}
-          unit={metric.unit}
-          unitAs="em"
-        />
-        <p>{metric.note}</p>
-      </div>
-    </GlassPanel>
-  );
-}
+import { VitalsPanel } from "./VitalsPanel";
 
 /** Red countdown that covers the avatar during the rest between breathing sets. */
 function RestTimer({ seconds, label, hint }: { seconds: number; label: string; hint: string }) {
@@ -237,6 +163,16 @@ export function SessionScreen({
             scoreLabel={isPaced ? "ZGODNOŚĆ Z RYTMEM" : "REZONANS"}
             score={score}
             stage={frame ? STAGE_LABELS[frame.breath.stage] : ""}
+            footer={
+              <>
+                <span className={cx("status-dot", state.quality?.ready ? "ok" : "wait")} />
+                Jakość sygnału: {state.quality ? `${Math.round(state.quality.good_pct)}% dobrych kanałów` : "…"}
+                <span>•</span>
+                {frame ? (frame.motion.still ? "bezruch – pomiar ważny" : "ruch – pomiar wstrzymany") : "…"}
+                <span>•</span>
+                {device ? `${device.n_pairs} par źródło–detektor` : ""}
+              </>
+            }
           />
           {(lastEvent || warning || state.pendingCommand) && (
             <GlassPanel className="event-banner">
@@ -252,11 +188,7 @@ export function SessionScreen({
               )}
             </GlassPanel>
           )}
-          <div className="live-metrics">
-            {buildMetrics(state).map((metric) => (
-              <LiveMetricCard key={metric.tone} metric={metric} />
-            ))}
-          </div>
+          <VitalsPanel vitals={vitals} paced={state.phase === "resonance_breathing"} />
         </div>
       </section>
     </AppShell>
