@@ -1,0 +1,424 @@
+{
+  "subjects": {
+    "dot": {
+      "n": 17,
+      "female": 9,
+      "age_mean": 23.0,
+      "age_range": [
+        20,
+        29
+      ],
+      "bmi_mean": 23.6,
+      "bmi_range": [
+        18.1,
+        30.9
+      ],
+      "bmi_over30": 2,
+      "bmi_25_30": 3,
+      "fitz_counts": {
+        "1": 3,
+        "2": 11,
+        "3": 3
+      },
+      "hair_counts": {
+        "brown": 9,
+        "blonde": 6,
+        "black/red": 2
+      },
+      "activity_counts": {
+        "1.06": 2,
+        "1.76": 2,
+        "3.03": 13
+      }
+    },
+    "supine": {
+      "n": 60,
+      "female": 31,
+      "age_mean": 26.7,
+      "age_range": [
+        18,
+        78
+      ],
+      "bmi_mean": 23.8,
+      "bmi_range": [
+        18.5,
+        37.1
+      ],
+      "bmi_over30": 6,
+      "bmi_25_30": 14,
+      "fitz_counts": {
+        "1": 9,
+        "2": 28,
+        "3": 19,
+        "4": 1,
+        "5": 2,
+        "6": 1
+      },
+      "hair_counts": {
+        "blonde": 26,
+        "brown": 21,
+        "black/red": 7,
+        "none": 3,
+        "grey": 3
+      },
+      "activity_counts": {
+        "0.0": 9,
+        "0.32": 2,
+        "1.06": 3,
+        "1.76": 15,
+        "3.03": 31
+      }
+    }
+  },
+  "inventory": [
+    {
+      "label": "dot-BH",
+      "files": 34,
+      "dur_mean": 742.24,
+      "dur_min": 700.19,
+      "dur_max": 806.49,
+      "missing_mean": 0.0,
+      "good_pct": 90.89,
+      "sci_median": 0.98,
+      "fs": 18.27
+    },
+    {
+      "label": "dot-RS",
+      "files": 68,
+      "dur_mean": 619.91,
+      "dur_min": 602.21,
+      "dur_max": 714.26,
+      "missing_mean": 0.02,
+      "good_pct": 91.11,
+      "sci_median": 0.98,
+      "fs": 18.27
+    },
+    {
+      "label": "dot-SPB",
+      "files": 68,
+      "dur_mean": 319.54,
+      "dur_min": 319.5,
+      "dur_max": 319.61,
+      "missing_mean": 0.0,
+      "good_pct": 91.21,
+      "sci_median": 0.98,
+      "fs": 18.27
+    },
+    {
+      "label": "supine-BH",
+      "files": 59,
+      "dur_mean": 301.01,
+      "dur_min": 243.38,
+      "dur_max": 505.31,
+      "missing_mean": 0.22,
+      "good_pct": 98.73,
+      "sci_median": 0.99,
+      "fs": 141.79
+    },
+    {
+      "label": "supine-BS",
+      "files": 59,
+      "dur_mean": 629.23,
+      "dur_min": 579.35,
+      "dur_max": 749.21,
+      "missing_mean": 0.46,
+      "good_pct": 96.61,
+      "sci_median": 0.99,
+      "fs": 141.79
+    }
+  ],
+  "dark_channel_pct": {
+    "dot": 7.2,
+    "supine": 0.2
+  },
+  "saturation_level": 4.987,
+  "saturated_channel_pct": {
+    "dot": {
+      "w760": 1.6,
+      "w850": 1.9
+    },
+    "supine": {
+      "w760": 1.6,
+      "w850": 6.4
+    }
+  },
+  "spb": {
+    "dom_rate_median": 5.55,
+    "dom_rate_within_5_7": 54.4,
+    "phase_locking_median": 0.65,
+    "mayer_rel_RS": 0.093,
+    "mayer_rel_SPB": 0.171,
+    "wilcoxon_p": 5.252154682210434e-12
+  },
+  "holds": {
+    "n_known": 118,
+    "median": 21.5,
+    "range": [
+      5.3,
+      105.9
+    ]
+  },
+  "hold_response": {
+    "hbo_peak_median": 0.507,
+    "tpeak_median": 26.9,
+    "pos_slope_pct": 45.8
+  },
+  "dot_bh": {
+    "short_peak_median": 0.279,
+    "short_tpeak_median": 15.9,
+    "max_peak_median": 0.516,
+    "max_tpeak_median": 60.7
+  },
+  "hr_agreement_r": 0.962,
+  "hr_by_task": {
+    "dot-BH": 68.3,
+    "dot-RS": 69.9,
+    "dot-SPB": 69.9,
+    "supine-BH": 69.5,
+    "supine-BS": 67.4
+  },
+  "dot_hr_by_session": {
+    "1": 68.4,
+    "2": 67.7,
+    "3": 71.8,
+    "4": 69.9
+  },
+  "dot_hr_session_friedman_p": 0.006583026590699243,
+  "top_correlations": [
+    {
+      "dataset": "supine",
+      "feature": "cardiac_amp_uM",
+      "target": "height_cm",
+      "rho": 0.6275,
+      "p": 0.0,
+      "n": 60,
+      "q_fdr": 0.0
+    },
+    {
+      "dataset": "supine",
+      "feature": "cardiac_amp_uM",
+      "target": "sex_m",
+      "rho": 0.5941,
+      "p": 0.0,
+      "n": 60,
+      "q_fdr": 0.0001
+    },
+    {
+      "dataset": "supine",
+      "feature": "hold_dur_mean_s",
+      "target": "sex_m",
+      "rho": 0.5694,
+      "p": 0.0,
+      "n": 59,
+      "q_fdr": 0.0003
+    },
+    {
+      "dataset": "supine",
+      "feature": "log_i850_long",
+      "target": "sex_m",
+      "rho": -0.5075,
+      "p": 0.0,
+      "n": 60,
+      "q_fdr": 0.0027
+    },
+    {
+      "dataset": "supine",
+      "feature": "hold_dur_mean_s",
+      "target": "height_cm",
+      "rho": 0.4806,
+      "p": 0.0001,
+      "n": 59,
+      "q_fdr": 0.0072
+    },
+    {
+      "dataset": "supine",
+      "feature": "log_i760_long",
+      "target": "height_cm",
+      "rho": -0.4632,
+      "p": 0.0002,
+      "n": 60,
+      "q_fdr": 0.0087
+    },
+    {
+      "dataset": "supine",
+      "feature": "ratio_760_850_long",
+      "target": "hair_color",
+      "rho": -0.4612,
+      "p": 0.0002,
+      "n": 60,
+      "q_fdr": 0.0087
+    },
+    {
+      "dataset": "supine",
+      "feature": "pulse_skew",
+      "target": "bmi",
+      "rho": 0.4585,
+      "p": 0.0002,
+      "n": 60,
+      "q_fdr": 0.0087
+    },
+    {
+      "dataset": "supine",
+      "feature": "short_i850",
+      "target": "sex_m",
+      "rho": 0.4555,
+      "p": 0.0003,
+      "n": 60,
+      "q_fdr": 0.0087
+    },
+    {
+      "dataset": "dot",
+      "feature": "resp_rate_bpm",
+      "target": "head_circ_cm",
+      "rho": -0.7721,
+      "p": 0.0003,
+      "n": 17,
+      "q_fdr": 0.0805
+    },
+    {
+      "dataset": "supine",
+      "feature": "hold_hbo_slope",
+      "target": "height_cm",
+      "rho": -0.4514,
+      "p": 0.0003,
+      "n": 59,
+      "q_fdr": 0.0103
+    },
+    {
+      "dataset": "supine",
+      "feature": "pulse_skew",
+      "target": "weight_kg",
+      "rho": 0.4295,
+      "p": 0.0006,
+      "n": 60,
+      "q_fdr": 0.0173
+    },
+    {
+      "dataset": "supine",
+      "feature": "log_i760_long",
+      "target": "sex_m",
+      "rho": -0.4246,
+      "p": 0.0007,
+      "n": 60,
+      "q_fdr": 0.0177
+    },
+    {
+      "dataset": "supine",
+      "feature": "log_i760_long",
+      "target": "head_circ_cm",
+      "rho": -0.4214,
+      "p": 0.0008,
+      "n": 60,
+      "q_fdr": 0.0177
+    },
+    {
+      "dataset": "supine",
+      "feature": "log_i850_long",
+      "target": "weight_kg",
+      "rho": -0.4213,
+      "p": 0.0008,
+      "n": 60,
+      "q_fdr": 0.0177
+    },
+    {
+      "dataset": "dot",
+      "feature": "cardiac_amp_uM",
+      "target": "sex_m",
+      "rho": 0.7217,
+      "p": 0.0011,
+      "n": 17,
+      "q_fdr": 0.1535
+    },
+    {
+      "dataset": "supine",
+      "feature": "log_i760_long",
+      "target": "weight_kg",
+      "rho": -0.4011,
+      "p": 0.0015,
+      "n": 60,
+      "q_fdr": 0.0307
+    },
+    {
+      "dataset": "dot",
+      "feature": "resp_rate_bpm",
+      "target": "bmi",
+      "rho": -0.7034,
+      "p": 0.0016,
+      "n": 17,
+      "q_fdr": 0.1553
+    },
+    {
+      "dataset": "supine",
+      "feature": "hold_hbo_slope",
+      "target": "sex_m",
+      "rho": -0.3942,
+      "p": 0.002,
+      "n": 59,
+      "q_fdr": 0.0386
+    },
+    {
+      "dataset": "supine",
+      "feature": "short_i850",
+      "target": "weight_kg",
+      "rho": 0.3874,
+      "p": 0.0022,
+      "n": 60,
+      "q_fdr": 0.0404
+    },
+    {
+      "dataset": "dot",
+      "feature": "spb_cycle_amp_hbo",
+      "target": "fitzpatrick",
+      "rho": 0.667,
+      "p": 0.0034,
+      "n": 17,
+      "q_fdr": 0.2466
+    },
+    {
+      "dataset": "supine",
+      "feature": "log_i850_long",
+      "target": "height_cm",
+      "rho": -0.3706,
+      "p": 0.0036,
+      "n": 60,
+      "q_fdr": 0.061
+    },
+    {
+      "dataset": "supine",
+      "feature": "hbo_std_uM",
+      "target": "age",
+      "rho": -0.3669,
+      "p": 0.0039,
+      "n": 60,
+      "q_fdr": 0.0637
+    },
+    {
+      "dataset": "supine",
+      "feature": "log_i850_long",
+      "target": "head_circ_cm",
+      "rho": -0.3593,
+      "p": 0.0048,
+      "n": 60,
+      "q_fdr": 0.07
+    },
+    {
+      "dataset": "supine",
+      "feature": "hold_hbo_slope",
+      "target": "head_circ_cm",
+      "rho": -0.3611,
+      "p": 0.005,
+      "n": 59,
+      "q_fdr": 0.07
+    }
+  ],
+  "n_tests": 594,
+  "n_fdr_sig": 17,
+  "crf": {
+    "mean": 12.95,
+    "sd": 2.58,
+    "hr_activity_rho": -0.127,
+    "hr_activity_p": 0.2749,
+    "hr_bmi_rho": -0.122,
+    "hr_bmi_p": 0.2937
+  }
+}

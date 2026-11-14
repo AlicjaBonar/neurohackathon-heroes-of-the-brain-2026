@@ -1,0 +1,289 @@
+dataset,subject,initials,task,session,start,file
+dot,1,HZ,BH,1,,01_HZ_BH1.snirf
+dot,1,HZ,BH,2,,01_HZ_BH2.snirf
+dot,2,DK,BH,1,,02_DK_BH1.snirf
+dot,2,DK,BH,2,,02_DK_BH2.snirf
+dot,3,JM,BH,1,,03_JM_BH1.snirf
+dot,3,JM,BH,2,,03_JM_BH2.snirf
+dot,4,AP,BH,1,,04_AP_BH1.snirf
+dot,4,AP,BH,2,,04_AP_BH2.snirf
+dot,5,MP,BH,1,,05_MP_BH1.snirf
+dot,5,MP,BH,2,,05_MP_BH2.snirf
+dot,6,PW,BH,1,,06_PW_BH1.snirf
+dot,6,PW,BH,2,,06_PW_BH2.snirf
+dot,7,PK,BH,1,,07_PK_BH1.snirf
+dot,7,PK,BH,2,,07_PK_BH2.snirf
+dot,8,JZ,BH,1,,08_JZ_BH1.snirf
+dot,8,JZ,BH,2,,08_JZ_BH2.snirf
+dot,9,SR,BH,1,,09_SR_BH1.snirf
+dot,9,SR,BH,2,,09_SR_BH2.snirf
+dot,10,BS,BH,1,,10_BS_BH1.snirf
+dot,10,BS,BH,2,,10_BS_BH2.snirf
+dot,11,JD,BH,1,,11_JD_BH1.snirf
+dot,11,JD,BH,2,,11_JD_BH2.snirf
+dot,12,AK,BH,1,,12_AK_BH1.snirf
+dot,12,AK,BH,2,,12_AK_BH2.snirf
+dot,13,AC,BH,1,,13_AC_BH1.snirf
+dot,13,AC,BH,2,,13_AC_BH2.snirf
+dot,15,AW,BH,1,,15_AW_BH1.snirf
+dot,15,AW,BH,2,,15_AW_BH2.snirf
+dot,16,PL,BH,1,,16_PL_BH1.snirf
+dot,16,PL,BH,2,,16_PL_BH2.snirf
+dot,17,MJ,BH,1,,17_MJ_BH1.snirf
+dot,17,MJ,BH,2,,17_MJ_BH2.snirf
+dot,18,PK,BH,1,,18_PK_BH1.snirf
+dot,18,PK,BH,2,,18_PK_BH2.snirf
+dot,1,HZ,RS,1,,01_HZ_RS1.snirf
+dot,1,HZ,RS,2,,01_HZ_RS2.snirf
+dot,1,HZ,RS,3,,01_HZ_RS3.snirf
+dot,1,HZ,RS,4,,01_HZ_RS4.snirf
+dot,2,DK,RS,1,,02_DK_RS1.snirf
+dot,2,DK,RS,2,,02_DK_RS2.snirf
+dot,2,DK,RS,3,,02_DK_RS3.snirf
+dot,2,DK,RS,4,,02_DK_RS4.snirf
+dot,3,JM,RS,1,,03_JM_RS1.snirf
+dot,3,JM,RS,2,,03_JM_RS2.snirf
+dot,3,JM,RS,3,,03_JM_RS3.snirf
+dot,3,JM,RS,4,,03_JM_RS4.snirf
+dot,4,AP,RS,1,,04_AP_RS1.snirf
+dot,4,AP,RS,2,,04_AP_RS2.snirf
+dot,4,AP,RS,3,,04_AP_RS3.snirf
+dot,4,AP,RS,4,,04_AP_RS4.snirf
+dot,5,MP,RS,1,,05_MP_RS1.snirf
+dot,5,MP,RS,2,,05_MP_RS2.snirf
+dot,5,MP,RS,3,,05_MP_RS3.snirf
+dot,5,MP,RS,4,,05_MP_RS4.snirf
+dot,6,PW,RS,1,,06_PW_RS1.snirf
+dot,6,PW,RS,2,,06_PW_RS2.snirf
+dot,6,PW,RS,3,,06_PW_RS3.snirf
+dot,6,PW,RS,4,,06_PW_RS4.snirf
+dot,7,PK,RS,1,,07_PK_RS1.snirf
+dot,7,PK,RS,2,,07_PK_RS2.snirf
+dot,7,PK,RS,3,,07_PK_RS3.snirf
+dot,7,PK,RS,4,,07_PK_RS4.snirf
+dot,8,JZ,RS,1,,08_JZ_RS1.snirf
+dot,8,JZ,RS,2,,08_JZ_RS2.snirf
+dot,8,JZ,RS,3,,08_JZ_RS3.snirf
+dot,8,JZ,RS,4,,08_JZ_RS4.snirf
+dot,9,SR,RS,1,,09_SR_RS1.snirf
+dot,9,SR,RS,2,,09_SR_RS2.snirf
+dot,9,SR,RS,3,,09_SR_RS3.snirf
+dot,9,SR,RS,4,,09_SR_RS4.snirf
+dot,10,BS,RS,1,,10_BS_RS1.snirf
+dot,10,BS,RS,2,,10_BS_RS2.snirf
+dot,10,BS,RS,3,,10_BS_RS3.snirf
+dot,10,BS,RS,4,,10_BS_RS4.snirf
+dot,11,JD,RS,1,,11_JD_RS1.snirf
+dot,11,JD,RS,2,,11_JD_RS2.snirf
+dot,11,JD,RS,3,,11_JD_RS3.snirf
+dot,11,JD,RS,4,,11_JD_RS4.snirf
+dot,12,AK,RS,1,,12_AK_RS1.snirf
+dot,12,AK,RS,2,,12_AK_RS2.snirf
+dot,12,AK,RS,3,,12_AK_RS3.snirf
+dot,12,AK,RS,4,,12_AK_RS4.snirf
+dot,13,AC,RS,1,,13_AC_RS1.snirf
+dot,13,AC,RS,2,,13_AC_RS2.snirf
+dot,13,AC,RS,3,,13_AC_RS3.snirf
+dot,13,AC,RS,4,,13_AC_RS4.snirf
+dot,15,AW,RS,1,,15_AW_RS1.snirf
+dot,15,AW,RS,2,,15_AW_RS2.snirf
+dot,15,AW,RS,3,,15_AW_RS3.snirf
+dot,15,AW,RS,4,,15_AW_RS4.snirf
+dot,16,PL,RS,1,,16_PL_RS1.snirf
+dot,16,PL,RS,2,,16_PL_RS2.snirf
+dot,16,PL,RS,3,,16_PL_RS3.snirf
+dot,16,PL,RS,4,,16_PL_RS4.snirf
+dot,17,MJ,RS,1,,17_MJ_RS1.snirf
+dot,17,MJ,RS,2,,17_MJ_RS2.snirf
+dot,17,MJ,RS,3,,17_MJ_RS3.snirf
+dot,17,MJ,RS,4,,17_MJ_RS4.snirf
+dot,18,PK,RS,1,,18_PK_RS1.snirf
+dot,18,PK,RS,2,,18_PK_RS2.snirf
+dot,18,PK,RS,3,,18_PK_RS3.snirf
+dot,18,PK,RS,4,,18_PK_RS4.snirf
+dot,1,HZ,SPB,1,,01_HZ_SPB1.snirf
+dot,1,HZ,SPB,2,,01_HZ_SPB2.snirf
+dot,1,HZ,SPB,3,,01_HZ_SPB3.snirf
+dot,1,HZ,SPB,4,,01_HZ_SPB4.snirf
+dot,2,DK,SPB,1,,02_DK_SPB1.snirf
+dot,2,DK,SPB,2,,02_DK_SPB2.snirf
+dot,2,DK,SPB,3,,02_DK_SPB3.snirf
+dot,2,DK,SPB,4,,02_DK_SPB4.snirf
+dot,3,JM,SPB,1,,03_JM_SPB1.snirf
+dot,3,JM,SPB,2,,03_JM_SPB2.snirf
+dot,3,JM,SPB,3,,03_JM_SPB3.snirf
+dot,3,JM,SPB,4,,03_JM_SPB4.snirf
+dot,4,AP,SPB,1,,04_AP_SPB1.snirf
+dot,4,AP,SPB,2,,04_AP_SPB2.snirf
+dot,4,AP,SPB,3,,04_AP_SPB3.snirf
+dot,4,AP,SPB,4,,04_AP_SPB4.snirf
+dot,5,MP,SPB,1,,05_MP_SPB1.snirf
+dot,5,MP,SPB,2,,05_MP_SPB2.snirf
+dot,5,MP,SPB,3,,05_MP_SPB3.snirf
+dot,5,MP,SPB,4,,05_MP_SPB4.snirf
+dot,6,PW,SPB,1,,06_PW_SPB1.snirf
+dot,6,PW,SPB,2,,06_PW_SPB2.snirf
+dot,6,PW,SPB,3,,06_PW_SPB3.snirf
+dot,6,PW,SPB,4,,06_PW_SPB4.snirf
+dot,7,PK,SPB,1,,07_PK_SPB1.snirf
+dot,7,PK,SPB,2,,07_PK_SPB2.snirf
+dot,7,PK,SPB,3,,07_PK_SPB3.snirf
+dot,7,PK,SPB,4,,07_PK_SPB4.snirf
+dot,8,JZ,SPB,1,,08_JZ_SPB1.snirf
+dot,8,JZ,SPB,2,,08_JZ_SPB2.snirf
+dot,8,JZ,SPB,3,,08_JZ_SPB3.snirf
+dot,8,JZ,SPB,4,,08_JZ_SPB4.snirf
+dot,9,SR,SPB,1,,09_SR_SPB1.snirf
+dot,9,SR,SPB,2,,09_SR_SPB2.snirf
+dot,9,SR,SPB,3,,09_SR_SPB3.snirf
+dot,9,SR,SPB,4,,09_SR_SPB4.snirf
+dot,10,BS,SPB,1,,10_BS_SPB1.snirf
+dot,10,BS,SPB,2,,10_BS_SPB2.snirf
+dot,10,BS,SPB,3,,10_BS_SPB3.snirf
+dot,10,BS,SPB,4,,10_BS_SPB4.snirf
+dot,11,JD,SPB,1,,11_JD_SPB1.snirf
+dot,11,JD,SPB,2,,11_JD_SPB2.snirf
+dot,11,JD,SPB,3,,11_JD_SPB3.snirf
+dot,11,JD,SPB,4,,11_JD_SPB4.snirf
+dot,12,AK,SPB,1,,12_AK_SPB1.snirf
+dot,12,AK,SPB,2,,12_AK_SPB2.snirf
+dot,12,AK,SPB,3,,12_AK_SPB3.snirf
+dot,12,AK,SPB,4,,12_AK_SPB4.snirf
+dot,13,AC,SPB,1,,13_AC_SPB1.snirf
+dot,13,AC,SPB,2,,13_AC_SPB2.snirf
+dot,13,AC,SPB,3,,13_AC_SPB3.snirf
+dot,13,AC,SPB,4,,13_AC_SPB4.snirf
+dot,15,AW,SPB,1,,15_AW_SPB1.snirf
+dot,15,AW,SPB,2,,15_AW_SPB2.snirf
+dot,15,AW,SPB,3,,15_AW_SPB3.snirf
+dot,15,AW,SPB,4,,15_AW_SPB4.snirf
+dot,16,PL,SPB,1,,16_PL_SPB1.snirf
+dot,16,PL,SPB,2,,16_PL_SPB2.snirf
+dot,16,PL,SPB,3,,16_PL_SPB3.snirf
+dot,16,PL,SPB,4,,16_PL_SPB4.snirf
+dot,17,MJ,SPB,1,,17_MJ_SPB1.snirf
+dot,17,MJ,SPB,2,,17_MJ_SPB2.snirf
+dot,17,MJ,SPB,3,,17_MJ_SPB3.snirf
+dot,17,MJ,SPB,4,,17_MJ_SPB4.snirf
+dot,18,PK,SPB,1,,18_PK_SPB1.snirf
+dot,18,PK,SPB,2,,18_PK_SPB2.snirf
+dot,18,PK,SPB,3,,18_PK_SPB3.snirf
+dot,18,PK,SPB,4,,18_PK_SPB4.snirf
+supine,10,PL,BS,1,2025-07-15 13:39:48,10_PL_BS_2025-07-15-13-39-48.snirf
+supine,11,KK,BS,1,2025-07-15 16:11:03,11_KK_BS_2025-07-15-16-11-03.snirf
+supine,12,MK,BS,1,2025-07-30 09:14:59,12_MK_BS_2025-07-30-09-14-59.snirf
+supine,13,JM,BS,1,2025-08-01 11:20:13,13_JM_BS_2025-08-01-11-20-13.snirf
+supine,14,KZ,BS,1,2025-08-05 10:21:05,14_KZ_BS_2025-08-05-10-21-05.snirf
+supine,15,MK,BS,1,2025-08-05 14:30:42,15_MK_BS_2025-08-05-14-30-42.snirf
+supine,16,IU,BS,1,2025-08-05 16:45:13,16_IU_BS_2025-08-05-16-45-13.snirf
+supine,17,PK,BS,1,2025-08-11 12:19:59,17_PK_BS_2025-08-11-12-19-59.snirf
+supine,18,AW,BS,1,2025-08-11 16:32:25,18_AW_BS_2025-08-11-16-32-25.snirf
+supine,19,OG,BS,1,2025-08-12 16:48:26,19_OG_BS_2025-08-12-16-48-26.snirf
+supine,1,JZ,BS,1,2025-06-27 09:21:25,1_JZ_BS_2025-06-27-09-21-25.snirf
+supine,20,EK,BS,1,2025-08-13 12:30:03,20_EK_BS_2025-08-13-12-30-03.snirf
+supine,21,DB,BS,1,2025-08-13 16:48:18,21_DB_BS_2025-08-13-16-48-18.snirf
+supine,22,FP,BS,1,2025-08-14 12:18:19,22_FP_BS_2025-08-14-12-18-19.snirf
+supine,23,PA,BS,1,2025-08-14 14:02:11,23_PA_BS_2025-08-14-14-02-11.snirf
+supine,24,MJ,BS,1,2025-08-18 10:23:01,24_MJ_BS_2025-08-18-10-23-01.snirf
+supine,25,AB,BS,1,2025-08-18 12:10:54,25_AB_BS_2025-08-18-12-10-54.snirf
+supine,26,MS,BS,1,2025-08-18 14:33:09,26_MS_BS_2025-08-18-14-33-09.snirf
+supine,27,BS,BS,1,2025-08-19 18:13:39,27_BS_BS_2025-08-19-18-13-39.snirf
+supine,28,AG,BS,1,2025-08-20 12:23:50,28_AG_BS_2025-08-20-12-23-50.snirf
+supine,29,JS,BS,1,2025-08-20 14:16:47,29_JS_BS_2025-08-20-14-16-47.snirf
+supine,2,SR,BS,1,2025-06-27 16:25:08,2_SR_BS_2025-06-27-16-25-08.snirf
+supine,30,OG,BS,1,2025-08-20 16:49:21,30_OG_BS_2025-08-20-16-49-21.snirf
+supine,31,MJ,BS,1,2025-08-21 11:19:56,31_MJ_BS_2025-08-21-11-19-56.snirf
+supine,32,AM,BS,1,2025-08-23 15:12:15,32_AM_BS_2025-08-23-15-12-15.snirf
+supine,33,BK,BS,1,2025-08-25 08:27:59,33_BK_BS_2025-08-25-08-27-59.snirf
+supine,34,PS,BS,1,2025-08-25 10:19:45,34_PS_BS_2025-08-25-10-19-45.snirf
+supine,35,JS,BS,1,2025-08-25 14:48:34,35_JS_BS_2025-08-25-14-48-34.snirf
+supine,36,AP,BS,1,2025-08-25 17:00:21,36_AP_BS_2025-08-25-17-00-21.snirf
+supine,37,FF,BS,1,2025-08-25 18:53:14,37_FF_BS_2025-08-25-18-53-14.snirf
+supine,38,JP,BS,1,2025-08-26 10:35:05,38_JP_BS_2025-08-26-10-35-05.snirf
+supine,39,MI,BS,1,2025-08-26 12:27:07,39_MI_BS_2025-08-26-12-27-07.snirf
+supine,3,PA,BS,1,2025-07-02 09:08:39,3_PA_BS_2025-07-02-09-08-39.snirf
+supine,40,KK,BS,1,2025-08-26 17:15:16,40_KK_BS_2025-08-26-17-15-16.snirf
+supine,42,JD,BS,1,2025-08-27 13:18:50,42_JD_BS_2025-08-27-13-18-50.snirf
+supine,43,MR,BS,1,2025-08-27 15:15:49,43_MR_BS_2025-08-27-15-15-49.snirf
+supine,44,AY,BS,1,2025-08-28 10:37:04,44_AY_BS_2025-08-28-10-37-04.snirf
+supine,45,AW,BS,1,2025-08-28 12:22:22,45_AW_BS_2025-08-28-12-22-22.snirf
+supine,46,YS,BS,1,2025-08-28 14:25:57,46_YS_BS_2025-08-28-14-25-57.snirf
+supine,47,BC,BS,1,2025-08-28 16:12:47,47_BC_BS_2025-08-28-16-12-47.snirf
+supine,48,DK,BS,1,2025-08-29 08:15:14,48_DK_BS_2025-08-29-08-15-14.snirf
+supine,49,MO,BS,1,2025-08-29 10:00:38,49_MO_BS_2025-08-29-10-00-38.snirf
+supine,4,MK,BS,1,2025-07-02 14:07:01,4_MK_BS_2025-07-02-14-07-01.snirf
+supine,50,AC,BS,1,2025-08-29 11:47:08,50_AC_BS_2025-08-29-11-47-08.snirf
+supine,51,AM,BS,1,2025-08-29 13:44:52,51_AM_BS_2025-08-29-13-44-52.snirf
+supine,52,WG,BS,1,2025-09-01 11:18:15,52_WG_BS_2025-09-01-11-18-15.snirf
+supine,53,CS,BS,1,2025-09-01 13:19:41,53_CS_BS_2025-09-01-13-19-41.snirf
+supine,54,MK,BS,1,2025-09-02 08:31:28,54_MK_BS_2025-09-02-08-31-28.snirf
+supine,55,AP,BS,1,2025-09-02 10:11:27,55_AP_BS_2025-09-02-10-11-27.snirf
+supine,56,ZJ,BS,1,2025-09-02 12:06:08,56_ZJ_BS_2025-09-02-12-06-08.snirf
+supine,57,ZN,BS,1,2025-09-02 14:15:47,57_ZN_BS_2025-09-02-14-15-47.snirf
+supine,58,AW,BS,1,2025-09-03 08:33:40,58_AW_BS_2025-09-03-08-33-40.snirf
+supine,59,IW,BS,1,2025-09-03 10:24:21,59_IW_BS_2025-09-03-10-24-21.snirf
+supine,5,KS,BS,1,2025-07-02 16:08:01,5_KS_BS_2025-07-02-16-08-01.snirf
+supine,60,JS,BS,1,2025-09-03 12:28:55,60_JS_BS_2025-09-03-12-28-55.snirf
+supine,6,LK,BS,1,2025-07-03 12:47:31,6_LK_BS_2025-07-03-12-47-31.snirf
+supine,7,SR,BS,1,2025-07-03 14:13:26,7_SR_BS_2025-07-03-14-13-26.snirf
+supine,8,JB,BS,1,2025-07-04 13:39:25,8_JB_BS_2025-07-04-13-39-25.snirf
+supine,9,PK,BS,1,2025-07-15 11:46:27,9_PK_BS_2025-07-15-11-46-27.snirf
+supine,10,PL,BH,1,2025-07-15 13:58:31,Breath holding_V2_10_PL_BH_2025-07-15-13-58-31.snirf
+supine,11,KK,BH,1,2025-07-15 16:25:47,Breath holding_V2_11_KK_BH_2025-07-15-16-25-47.snirf
+supine,12,MK,BH,1,2025-07-30 09:29:35,Breath holding_V2_12_MK_BH_2025-07-30-09-29-35.snirf
+supine,13,JM,BH,1,2025-08-01 11:35:38,Breath holding_V2_13_JM_BH_2025-08-01-11-35-38.snirf
+supine,14,KZ,BH,1,2025-08-05 10:50:24,Breath holding_V2_14_KZ_BH_2025-08-05-10-50-24.snirf
+supine,15,MP,BH,1,2025-08-05 14:45:19,Breath holding_V2_15_MP_BH_2025-08-05-14-45-19.snirf
+supine,16,IU,BH,1,2025-08-05 16:59:57,Breath holding_V2_16_IU_BH_2025-08-05-16-59-57.snirf
+supine,17,PK,BH,1,2025-08-11 12:40:21,Breath holding_V2_17_PK_BH_2025-08-11-12-40-21.snirf
+supine,18,AW,BH,1,2025-08-11 16:47:18,Breath holding_V2_18_AW_BH_2025-08-11-16-47-18.snirf
+supine,19,OG,BH,1,2025-08-12 17:04:04,Breath holding_V2_19_OG_BH_2025-08-12-17-04-04.snirf
+supine,1,JZ,BH,1,2025-06-27 09:38:46,Breath holding_V2_1_JZ_BH_2025-06-27-09-38-46.snirf
+supine,20,EK,BH,1,2025-08-13 12:45:34,Breath holding_V2_20_EK_BH_2025-08-13-12-45-34.snirf
+supine,21,DB,BH,1,2025-08-13 17:01:29,Breath holding_V2_21_DB_BH_2025-08-13-17-01-29.snirf
+supine,22,FP,BH,1,2025-08-14 12:37:01,Breath holding_V2_22_FP_BH_2025-08-14-12-37-01.snirf
+supine,23,PA,BH,1,2025-08-14 14:15:14,Breath holding_V2_23_PA_BH_2025-08-14-14-15-14.snirf
+supine,24,MJ,BH,1,2025-08-18 10:38:32,Breath holding_V2_24_MJ_BH_2025-08-18-10-38-32.snirf
+supine,25,AB,BH,1,2025-08-18 12:29:32,Breath holding_V2_25_AB_BS_2025-08-18-12-29-32.snirf
+supine,26,MS,BH,1,2025-08-18 14:46:39,Breath holding_V2_26_MS_BH2_2025-08-18-14-46-39.snirf
+supine,27,BS,BH,1,2025-08-19 18:31:33,Breath holding_V2_27_BS_BH_2025-08-19-18-31-33.snirf
+supine,28,AG,BH,1,2025-08-20 12:41:48,Breath holding_V2_28_AG_BH_2025-08-20-12-41-48.snirf
+supine,29,JS,BH,1,2025-08-20 14:48:59,Breath holding_V2_29_JS_BH_2025-08-20-14-48-59.snirf
+supine,2,SR,BH,1,2025-06-27 16:40:04,Breath holding_V2_2_SR_BH_2025-06-27-16-40-04.snirf
+supine,30,OG,BH,1,2025-08-20 17:04:42,Breath holding_V2_30_OG_BH_2025-08-20-17-04-42.snirf
+supine,31,MJ,BH,1,2025-08-21 11:34:06,Breath holding_V2_31_MJ_BH_2025-08-21-11-34-06.snirf
+supine,32,AM,BH,1,2025-08-23 15:26:41,Breath holding_V2_32_AM_BH_2025-08-23-15-26-41.snirf
+supine,33,BK,BH,1,2025-08-25 08:44:20,Breath holding_V2_33_BK_BH_2025-08-25-08-44-20.snirf
+supine,34,PS,BH,1,2025-08-25 10:34:24,Breath holding_V2_34_PS_BH_2025-08-25-10-34-24.snirf
+supine,35,JS,BH,1,2025-08-25 15:02:44,Breath holding_V2_35_JS_BH_2025-08-25-15-02-44.snirf
+supine,36,AP,BH,1,2025-08-25 17:13:25,Breath holding_V2_36_AP_BH_2025-08-25-17-13-25.snirf
+supine,37,FF,BH,1,2025-08-25 19:07:34,Breath holding_V2_37_FF_BH_2025-08-25-19-07-34.snirf
+supine,38,JP,BH,1,2025-08-26 10:50:45,Breath holding_V2_38_JP_BH_2025-08-26-10-50-45.snirf
+supine,39,MI,BH,1,2025-08-26 12:40:07,Breath holding_V2_39_MI_BH_2025-08-26-12-40-07.snirf
+supine,3,PA,BH,1,2025-07-02 09:24:44,Breath holding_V2_3_PA_BH_2025-07-02-09-24-44.snirf
+supine,40,KK,BH,1,2025-08-26 17:32:47,Breath holding_V2_40_KK_BH_2025-08-26-17-32-47.snirf
+supine,41,MR,BH,1,2025-08-27 11:54:29,Breath holding_V2_41_MR_BH_2025-08-27-11-54-29.snirf
+supine,42,JD,BH,1,2025-08-27 13:33:38,Breath holding_V2_42_JD_BH_2025-08-27-13-33-38.snirf
+supine,43,MR,BH,1,2025-08-27 15:31:03,Breath holding_V2_43_MR_BH_2025-08-27-15-31-03.snirf
+supine,44,AY,BH,1,2025-08-28 10:52:08,Breath holding_V2_44_AY_BH_2025-08-28-10-52-08.snirf
+supine,45,AW,BH,1,2025-08-28 12:39:36,Breath holding_V2_45_AW_BH_2025-08-28-12-39-36.snirf
+supine,46,YS,BH,1,2025-08-28 14:40:02,Breath holding_V2_46_YS_BH_2025-08-28-14-40-02.snirf
+supine,47,BC,BH,1,2025-08-28 16:26:51,Breath holding_V2_47_BC_BS_2025-08-28-16-26-51.snirf
+supine,48,DK,BH,1,2025-08-29 08:30:34,Breath holding_V2_48_DK_BH_2025-08-29-08-30-34.snirf
+supine,49,MO,BH,1,2025-08-29 10:14:35,Breath holding_V2_49_MO_BH_2025-08-29-10-14-35.snirf
+supine,4,MK,BH,1,2025-07-02 14:20:46,Breath holding_V2_4_MK_BH_2025-07-02-14-20-46.snirf
+supine,50,AC,BH,1,2025-08-29 11:59:49,Breath holding_V2_50_AC_BH_2025-08-29-11-59-49.snirf
+supine,51,AM,BH,1,2025-08-29 14:00:20,Breath holding_V2_51_AM_BH_2025-08-29-14-00-20.snirf
+supine,52,WG,BH,1,2025-09-01 11:33:48,Breath holding_V2_52_WG_BH_2025-09-01-11-33-48.snirf
+supine,53,CS,BH,1,2025-09-01 13:34:22,Breath holding_V2_53_CS_BH_2025-09-01-13-34-22.snirf
+supine,54,MK,BH,1,2025-09-02 08:46:06,Breath holding_V2_54_MK_BH_2025-09-02-08-46-06.snirf
+supine,55,AP,BH,1,2025-09-02 10:28:17,Breath holding_V2_55_AP_BH_2025-09-02-10-28-17.snirf
+supine,56,ZJ,BH,1,2025-09-02 12:18:51,Breath holding_V2_56_ZJ_BH_2025-09-02-12-18-51.snirf
+supine,57,ZN,BH,1,2025-09-02 14:31:06,Breath holding_V2_57_ZN_BH_2025-09-02-14-31-06.snirf
+supine,58,AW,BH,1,2025-09-03 08:51:36,Breath holding_V2_58_AW_BH_2025-09-03-08-51-36.snirf
+supine,5,KS,BH,1,2025-07-02 16:21:57,Breath holding_V2_5_KS_BH_2025-07-02-16-21-57.snirf
+supine,60,JS,BH,1,2025-09-03 12:45:20,Breath holding_V2_60_JS_BH_2025-09-03-12-45-20.snirf
+supine,6,LK,BH,1,2025-07-03 12:41:29,Breath holding_V2_6_LK_BH_2025-07-03-12-41-29.snirf
+supine,7,SR,BH,1,2025-07-03 14:27:49,Breath holding_V2_7_SR_BH_2025-07-03-14-27-49.snirf
+supine,8,JB,BH,1,2025-07-04 13:54:00,Breath holding_V2_8_JB_BH_2025-07-04-13-54-00.snirf
+supine,9,PK,BH,1,2025-07-15 12:00:26,Breath holding_V2_9_PK_BH_2025-07-15-12-00-26.snirf

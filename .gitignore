@@ -1,0 +1,9 @@
+data/*
+.venv/
+__pycache__/
+# large intermediate files derived from the (hackathon-only) data
+results/arrays.pkl
+results/channels.csv
+results/log_*.txt
+app_data/
+
