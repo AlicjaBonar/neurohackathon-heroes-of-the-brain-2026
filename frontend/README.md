@@ -8,6 +8,9 @@ pnpm dev
 pnpm build
 ```
 
+Start the backend first (`uvicorn app.backend.main:app --port 8000` from the repo root). In dev, Vite
+proxies `/api` and `/ws` to `localhost:8000` (see `vite.config.ts`), so no CORS setup is needed.
+
 Copy `.env.example` to `.env.local` to configure the API:
 
 - `VITE_API_BASE_URL` is the REST base URL (defaults to `/api`). Use `getJson` or
@@ -33,7 +36,11 @@ Copy `.env.example` to `.env.local` to configure the API:
 Rule of thumb: one file per concept, not per component. Split a component into its own
 file only when it is reused, large, or has its own logic (hooks, effects).
 
-- `src/api/` contains the REST/JSON client and WebSocket receiver.
+- `src/api/` — `rest.ts` (fetch + `ApiError`), `backend.ts` (typed calls for every endpoint used),
+  `types.ts` (REST models and WebSocket messages from docs/APP_SPEC.md), `liveSocket.ts`
+  (WebSocket with `send`/`close`; takes the `ws_url` returned by `POST /api/sessions`).
+- `src/features/session/useLiveSession.ts` runs one session: create → connect → `baseline_pre` →
+  exercise → `finish`. Demo personas use `replay`; others use `mock` (replay falls back to mock on 404/422).
 - `src/features/model3d/` contains the canvas lifecycle contract for a 3D renderer.
   Supply a renderer implementing `Model3DRenderer`; no 3D engine or model asset is
   included until one is selected.

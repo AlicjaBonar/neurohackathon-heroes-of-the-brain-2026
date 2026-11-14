@@ -2,7 +2,10 @@ import { useId } from "react";
 import { CardHeader, GlassPanel, ProgressBar } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
 import { formatTrend } from "@/lib/utils";
-import { FLOW_TREND, LAST_SESSION } from "./statsData";
+import type { Summary } from "@/api/types";
+import { formatDuration } from "@/lib/utils";
+import { ratingOf, summaryBars } from "./statsData";
+import type { TrendDirection } from "@/lib/utils";
 
 const X_START = 35;
 const X_STEP = 72;
@@ -53,38 +56,58 @@ function TrendChart({ values, labels }: { values: number[]; labels: string[] }) 
   );
 }
 
-export function FlowTrendCard() {
+export function FlowTrendCard({
+  values,
+  labels,
+  current,
+  change,
+}: {
+  values: number[];
+  labels: string[];
+  current: number | null;
+  change: { direction: TrendDirection; value: string } | null;
+}) {
   return (
     <GlassPanel as="article" className="chart-card">
       <CardHeader
-        caption="7-DNIOWY TREND"
-        title="Gotowość do Flow"
+        caption="OSTATNIE SESJE"
+        title="Rezonans oddechowy"
         aside={
-          <div className="chart-score">
-            <strong>{FLOW_TREND.current}%</strong>
-            <span>{formatTrend(FLOW_TREND.change.direction, FLOW_TREND.change.value)}</span>
-          </div>
+          current !== null && (
+            <div className="chart-score">
+              <strong>{current}/100</strong>
+              {change && <span>{formatTrend(change.direction, change.value)}</span>}
+            </div>
+          )
         }
       />
-      <TrendChart values={FLOW_TREND.values} labels={FLOW_TREND.days} />
+      {values.length ? (
+        <TrendChart values={values} labels={labels} />
+      ) : (
+        <p className="empty-note">Brak sesji z oddechem rezonansowym.</p>
+      )}
     </GlassPanel>
   );
 }
 
-export function SessionSummaryCard() {
+export function SessionSummaryCard({ summary }: { summary: Summary | null }) {
+  const bars = summary ? summaryBars(summary) : [];
+  const rating = ratingOf(summary?.scores?.relaxation);
   return (
     <GlassPanel as="article" className="summary-card">
       <CardHeader
-        caption={`OSTATNIA SESJA • ${LAST_SESSION.duration}`}
+        caption={`OSTATNIA SESJA${summary ? ` • ${formatDuration(Math.round(summary.duration_s))} MIN` : ""}`}
         title="Podsumowanie sesji"
         aside={
-          <span className="good-badge">
-            <Icon name="check" size={14} /> {LAST_SESSION.rating}
-          </span>
+          rating && (
+            <span className="good-badge">
+              <Icon name="check" size={14} /> {rating}
+            </span>
+          )
         }
       />
       <div className="summary-bars">
-        {LAST_SESSION.bars.map((bar) => (
+        {bars.map((bar) => (
           <div key={bar.label}>
             <span>
               {bar.label} {bar.hint && <small>{bar.hint}</small>}
@@ -93,6 +116,7 @@ export function SessionSummaryCard() {
             <strong>{bar.value}%</strong>
           </div>
         ))}
+        {!bars.length && <p className="empty-note">Brak zakończonej sesji z wynikami.</p>}
       </div>
     </GlassPanel>
   );

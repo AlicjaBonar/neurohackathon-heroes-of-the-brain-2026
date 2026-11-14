@@ -1,0 +1,207 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { api, errorMessage } from "@/api/backend";
+import { connectLiveStream, type LiveStream } from "@/api/liveSocket";
+import type {
+  ClientMsg,
+  EventMsg,
+  FrameMsg,
+  QualityMsg,
+  ServerMsg,
+  SessionCreated,
+  SourceIn,
+  Summary,
+  VitalsMsg,
+} from "@/api/types";
+
+/** Number of breath samples kept for the live chart (10 Hz -> 12 s). */
+const BUFFER = 120;
+/** Length of baseline_pre; the real 120 s default would make the demo drag. */
+const BASELINE_S = 20;
+
+export type SignalSample = { signal: number; target: number | null };
+
+export type LiveState = {
+  status: "connecting" | "running" | "finishing" | "done" | "error";
+  error: string | null;
+  device: SessionCreated["device"] | null;
+  phase: string | null;
+  phaseStartT: number;
+  phaseDuration: number | null;
+  frame: FrameMsg | null;
+  vitals: VitalsMsg | null;
+  quality: QualityMsg | null;
+  samples: SignalSample[];
+  events: EventMsg[];
+  pendingCommand: EventMsg | null;
+  summary: Summary | null;
+};
+
+const INITIAL: LiveState = {
+  status: "connecting",
+  error: null,
+  device: null,
+  phase: null,
+  phaseStartT: 0,
+  phaseDuration: null,
+  frame: null,
+  vitals: null,
+  quality: null,
+  samples: [],
+  events: [],
+  pendingCommand: null,
+  summary: null,
+};
+
+/** Target breath height (0..1) for a pacer phase: 0 = start of inhale, 0.5 = peak. */
+const targetHeight = (phase: number) => (1 - Math.cos(2 * Math.PI * phase)) / 2;
+
+/**
+ * One live session: creates it, opens the WebSocket, runs `baseline_pre` then the exercise
+ * and finishes the session when the last phase ends (docs 8.4, 8.6).
+ */
+export function useLiveSession({
+  userId,
+  exercise,
+  source,
+}: {
+  userId: string;
+  exercise: string;
+  source: SourceIn;
+}) {
+  const [state, setState] = useState<LiveState>(INITIAL);
+  const streamRef = useRef<LiveStream<ClientMsg> | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
+  const samplesRef = useRef<SignalSample[]>([]);
+  const finishingRef = useRef(false);
+
+  const finish = useCallback(async () => {
+    const sid = sessionIdRef.current;
+    if (!sid || finishingRef.current) return;
+    finishingRef.current = true;
+    setState((s) => ({ ...s, status: "finishing" }));
+    try {
+      const summary = await api.finishSession(sid);
+      streamRef.current?.close();
+      setState((s) => ({ ...s, status: "done", summary }));
+    } catch (error) {
+      finishingRef.current = false;
+      setState((s) => ({ ...s, status: "error", error: errorMessage(error) }));
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    let protocol: string[] = [];
+    let step = 0;
+    finishingRef.current = false;
+    samplesRef.current = [];
+    setState(INITIAL);
+
+    const handle = (msg: ServerMsg) => {
+      switch (msg.type) {
+        case "hello":
+          streamRef.current?.send({ type: "command", action: "start_phase", phase: protocol[0] });
+          break;
+        case "frame": {
+          const target = msg.pacer ? targetHeight(msg.pacer.target_phase) : null;
+          samplesRef.current = [...samplesRef.current, { signal: msg.breath.signal, target }].slice(-BUFFER);
+          setState((s) => ({ ...s, frame: msg, samples: samplesRef.current }));
+          break;
+        }
+        case "vitals":
+          setState((s) => ({ ...s, vitals: msg }));
+          break;
+        case "quality":
+          setState((s) => ({ ...s, quality: msg }));
+          break;
+        case "event":
+          setState((s) => ({
+            ...s,
+            events: [...s.events.slice(-19), msg],
+            pendingCommand:
+              msg.name === "command_issued"
+                ? msg
+                : msg.name === "command_verified" || msg.name === "command_failed"
+                  ? null
+                  : s.pendingCommand,
+          }));
+          break;
+        case "phase":
+          if (msg.state === "started") {
+            setState((s) => ({
+              ...s,
+              status: "running",
+              phase: msg.phase,
+              phaseStartT: msg.t,
+              phaseDuration: msg.duration_s ?? null,
+            }));
+          } else if (step + 1 < protocol.length) {
+            step += 1;
+            streamRef.current?.send({ type: "command", action: "start_phase", phase: protocol[step] });
+          } else {
+            void finish();
+          }
+          break;
+        case "error":
+          // Non-fatal errors (e.g. a rejected command) don't stop the stream.
+          if (msg.fatal) setState((s) => ({ ...s, status: "error", error: msg.message }));
+          break;
+        default:
+          break;
+      }
+    };
+
+    (async () => {
+      try {
+        protocol = ["baseline_pre", exercise];
+        const open = (src: SourceIn) =>
+          api.createSession({ user_id: userId, source: { ...src, baseline_s: BASELINE_S }, protocol });
+        // Replay needs the recordings in data/ and the phase to exist for that person;
+        // when it doesn't (404/422) fall back to the simulator.
+        const created = await open(source).catch((error) => {
+          const status = (error as { status?: number }).status;
+          if (source.type === "replay" && (status === 404 || status === 422)) return open({ type: "mock" });
+          throw error;
+        });
+        if (cancelled) return;
+        sessionIdRef.current = created.session_id;
+        setState((s) => ({ ...s, device: created.device }));
+        streamRef.current = connectLiveStream<ServerMsg, ClientMsg>(
+          {
+            onMessage: handle,
+            onError: (error) => setState((s) => ({ ...s, status: "error", error: error.message })),
+          },
+          created.ws_url,
+        );
+      } catch (error) {
+        if (!cancelled) setState((s) => ({ ...s, status: "error", error: errorMessage(error) }));
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      streamRef.current?.close();
+      streamRef.current = null;
+    };
+    // The session is created once per mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const endHold = useCallback(() => {
+    const sid = sessionIdRef.current;
+    if (sid) void api.holdEnd(sid).catch(() => undefined);
+  }, []);
+
+  const simulateMotion = useCallback((correct: boolean, cmd: EventMsg) => {
+    const data = cmd.data ?? {};
+    streamRef.current?.send({
+      type: "command",
+      action: "simulate_motion",
+      gesture: String(data.target ?? "nod"),
+      reps: Number(data.reps ?? 3),
+      correct,
+    });
+  }, []);
+
+  return { state, finish, endHold, simulateMotion };
+}

@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { SENSOR_RATE_LABEL } from "@/lib/utils";
+import { useEffect, useState, type ReactNode } from "react";
+import { getJson } from "@/api/rest";
 
 export function Brand() {
   return (
@@ -17,10 +17,23 @@ export function Brand() {
   );
 }
 
+type Health = { status: string; version: string; demo_data: boolean };
+
+/** Backend connection indicator (GET /api/health). */
 export function StatusPill() {
+  const [health, setHealth] = useState<Health | "offline" | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    getJson<Health>("health", controller.signal)
+      .then(setHealth)
+      .catch(() => !controller.signal.aborted && setHealth("offline"));
+    return () => controller.abort();
+  }, []);
   return (
     <div className="status-pill">
-      <i /> fNIRS połączony <b>{SENSOR_RATE_LABEL}</b>
+      <i />{" "}
+      {health === "offline" ? "Brak połączenia z backendem" : health ? "Backend połączony" : "Łączenie…"}
+      {health && health !== "offline" && <b>v{health.version}</b>}
     </div>
   );
 }
