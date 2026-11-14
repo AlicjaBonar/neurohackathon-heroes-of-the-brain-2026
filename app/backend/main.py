@@ -357,7 +357,7 @@ def _live_or_409(sid: str):
 @app.post("/api/sessions/{sid}/phases")
 async def start_phase(sid: str, body: PhaseIn):
     ls = _live_or_409(sid)
-    err = ls.start_phase(body.phase)
+    err = await _locked(ls, ls.start_phase, body.phase)
     if err:
         raise ApiError(409, err, f"Cannot start phase {body.phase}: {err}")
     return dict(phase=body.phase, state="started", t=round(ls.src.t, 2))
@@ -366,7 +366,7 @@ async def start_phase(sid: str, body: PhaseIn):
 @app.post("/api/sessions/{sid}/events")
 async def user_event(sid: str, body: EventIn):
     ls = _live_or_409(sid)
-    if not ls.user_event(body.name):
+    if not await _locked(ls, ls.user_event, body.name):
         raise ApiError(409, "event_not_applicable", f"{body.name} is not valid in the current phase")
     return dict(accepted=True, t=round(ls.src.t, 2))
 
@@ -382,7 +382,7 @@ async def finish(sid: str):
     ls = runtime.sessions.get(sid)
     if ls is None or not ls.phase_log and not ls.phase:
         raise ApiError(409, "nothing_measured", "No phase has been run in this session.")
-    return ls.finish()
+    return await _locked(ls, ls.finish)
 
 
 @app.get("/api/sessions/{sid}/summary")
@@ -433,6 +433,15 @@ def demo_reset():
 
 # ---------------------------------------------------------------------------- websocket
 
+async def _locked(ls: runtime.LiveSession, fn, *args):
+    """Run a session method in a worker thread: replay loads SNIRF files and runs NeuroKit,
+    which would otherwise freeze the event loop and every live stream with it."""
+    def run():
+        with ls.lock:
+            return fn(*args)
+    return await asyncio.to_thread(run)
+
+
 async def _read_commands(ws: WebSocket, ls: runtime.LiveSession) -> None:
     """Commands from the client; replies/errors go to ls.outbox and are sent with the next tick."""
     def error(code, message):
@@ -450,7 +459,7 @@ async def _read_commands(ws: WebSocket, ls: runtime.LiveSession) -> None:
         elif kind == "hello":
             pass                                   # optional; the server greets on connect
         elif kind == "command" and action == "start_phase":
-            err = ls.start_phase(msg.get("phase", ""))
+            err = await _locked(ls, ls.start_phase, msg.get("phase", ""))
             if err:
                 error(err, f"Cannot start phase {msg.get('phase')}")
         elif kind == "command" and action == "simulate_motion":
@@ -475,17 +484,24 @@ async def ws_session(ws: WebSocket, sid: str):
 
     ls = runtime.sessions.get(sid)
     if ls is None:
-        ls = runtime.sessions[sid] = runtime.LiveSession(s, user, runtime.baseline_opts.get(sid, 120.0))
+        ls = await asyncio.to_thread(runtime.LiveSession, s, user, runtime.baseline_opts.get(sid, 120.0))
+        ls = runtime.sessions.setdefault(sid, ls)
+    if hasattr(ls.src, "prefetch"):
+        asyncio.create_task(asyncio.to_thread(ls.src.prefetch, ls.exercise))
     await ws.send_json(dict(type="hello", protocol=config.PROTOCOL_VERSION, session_id=sid, fs_hz=10.0))
     if ls.phase:
         await ws.send_json(dict(type="phase", t=round(ls.src.t, 2), phase=ls.phase, state="started"))
 
     reader = asyncio.create_task(_read_commands(ws, ls))
     try:
+        loop = asyncio.get_running_loop()
+        next_at = loop.time()
         while not ls.ended and not reader.done():
-            for m in ls.tick():
+            for m in await _locked(ls, ls.tick):
                 await ws.send_json(m)
-            await asyncio.sleep(runtime.TICK_S)
+            # Fixed 10 Hz clock: sleep until the next slot instead of a fixed 0.1 s after the work.
+            next_at = max(next_at + runtime.TICK_S, loop.time() - runtime.TICK_S)
+            await asyncio.sleep(max(0.0, next_at - loop.time()))
         if ls.ended:
             await ws.send_json(dict(type="end", reason="finished", summary_url=f"/api/sessions/{sid}/summary"))
             await ws.close(code=1000)

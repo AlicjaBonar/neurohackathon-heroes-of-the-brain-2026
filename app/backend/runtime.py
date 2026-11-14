@@ -6,6 +6,7 @@ every 0.1 s and sends whatever it returns.
 from __future__ import annotations
 
 import json
+import threading
 from dataclasses import dataclass, field
 
 from . import config, db, repo
@@ -34,6 +35,8 @@ class LiveSession:
         self.id = session["id"]
         self.user_id = session["user_id"]
         self.user = user
+        # tick() runs in a worker thread (main.ws_session); commands take the same lock.
+        self.lock = threading.Lock()
         self.exercise = session["exercise"]
         self.status = session["status"]
         if session["source_type"] == "replay":

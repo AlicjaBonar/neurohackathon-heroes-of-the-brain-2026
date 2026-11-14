@@ -280,6 +280,16 @@ class ReplaySource:
             raise RecordingNotFound(f"{self.ds}/{self.sub:02d} has no {task}{session}")
         return prepare(str(p), self.age)
 
+    def prefetch(self, phase: str) -> None:
+        """Load the exercise recording ahead of time (prepare() is cached), so starting the phase
+        later does not stall the live stream. Called from a worker thread."""
+        task = {"resonance_breathing": ("SPB", self.sess), "short_holds": ("BH", 1), "breath_hold": ("BH", 1)}
+        if phase in task and phase in self.available:
+            try:
+                self._prep(*task[phase])
+            except Exception:
+                pass
+
     # ------------------------------------------------------------------ phases
     def start_phase(self, name: str) -> float:
         if name not in self.available:

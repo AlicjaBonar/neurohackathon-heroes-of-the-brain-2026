@@ -114,6 +114,7 @@ class MockSource:
         if s.kind == "paced":
             self.set_no += 1
             self._cycle_in_seg = -1
+            self._sync_phase = True
         elif s.kind == "hold":
             self._hold_by = "detector"
             if s.dur is None:
@@ -186,6 +187,11 @@ class MockSource:
                 self._ev("cycle", dict(index=self.cycles, set=self.set_no, in_set=c + 1))
             target = (u / ex.INHALE_S * 0.5 if u < ex.INHALE_S
                       else 0.5 + (u - ex.INHALE_S) / (ex.CYCLE_S - ex.INHALE_S) * 0.5)
+            if getattr(self, "_sync_phase", False):
+                # Start of a set: the person is still mid-breath, so the breath does not jump to the
+                # pacer; the error starts at the current offset and decays as they catch up.
+                self._sync_phase = False
+                self.err = (self.phase - target + 0.5) % 1.0 - 0.5
             self.lock += (0.88 - self.lock) * dt / 25.0
             self.err = self._ou(self.err, 4.0, 0.12 * (1 - self.lock) + 0.015, dt)
             self.phase = (target + self.err) % 1.0
