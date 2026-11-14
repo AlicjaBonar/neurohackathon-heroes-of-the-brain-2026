@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, errorMessage } from "@/api/backend";
 import { connectLiveStream, type LiveStream } from "@/api/liveSocket";
 import type {
+  ChannelsMsg,
   ClientMsg,
   EventMsg,
   FrameMsg,
@@ -37,6 +38,9 @@ export type SignalSample = {
 export type LiveState = {
   status: "connecting" | "running" | "finishing" | "done" | "error";
   error: string | null;
+  sessionId: string | null;
+  /** Latest per-channel HbO/HbR for the brain map (2 Hz). */
+  channels: ChannelsMsg | null;
   device: SessionCreated["device"] | null;
   phase: string | null;
   phaseStartT: number;
@@ -59,6 +63,8 @@ export type LiveState = {
 const INITIAL: LiveState = {
   status: "connecting",
   error: null,
+  sessionId: null,
+  channels: null,
   device: null,
   phase: null,
   phaseStartT: 0,
@@ -173,6 +179,9 @@ export function useLiveSession({
           lockRef.current = msg.phase_lock?.value ?? null;
           setState((s) => ({ ...s, vitals: msg }));
           break;
+        case "channels":
+          setState((s) => ({ ...s, channels: msg }));
+          break;
         case "quality":
           setState((s) => ({ ...s, quality: msg }));
           break;
@@ -241,7 +250,7 @@ export function useLiveSession({
         });
         if (cancelled) return;
         sessionIdRef.current = created.session_id;
-        setState((s) => ({ ...s, device: created.device }));
+        setState((s) => ({ ...s, device: created.device, sessionId: created.session_id }));
         streamRef.current = connectLiveStream<ServerMsg, ClientMsg>(
           {
             onMessage: handle,

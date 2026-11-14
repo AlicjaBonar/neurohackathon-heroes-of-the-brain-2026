@@ -136,12 +136,59 @@ export type VitalsMsg = {
   vs_baseline?: { hr_delta_bpm?: number; rmssd_delta_pct?: number };
 };
 
+export type ChannelStatus = "good" | "weak" | "saturated" | "dark";
+
+export type ChannelQuality = { pair: string; status: ChannelStatus; sci: number; distance_mm: number };
+
 export type QualityMsg = {
   type: "quality";
   t: number;
   ready: boolean;
   good_pct: number;
+  channels?: ChannelQuality[];
   warnings: { code: string; text: string }[];
+};
+
+/** Per-pair HbO/HbR for the brain map (2 Hz); index i = probe.pairs[i]; null = bad channel. */
+export type ChannelsMsg = {
+  type: "channels";
+  t: number;
+  hbo: (number | null)[];
+  hbr: (number | null)[];
+  scale_uM: number;
+  source: Source;
+};
+
+type Vec3 = [number, number, number];
+
+export type ProbePair = {
+  index: number;
+  pair: string;
+  source: number;
+  detector: number;
+  distance_mm: number;
+  short: boolean;
+  /** Nearest 10-10 position. */
+  label: string;
+  /** Top view, head unit circle (Cz = 0,0; nose up). */
+  x: number;
+  y: number;
+  pos3d: Vec3;
+  normal: Vec3;
+  /** Same point 15 mm deep, where fNIRS is most sensitive. */
+  cortex3d: Vec3;
+};
+
+export type Optode = { id: number; x: number; y: number; pos3d: Vec3 };
+
+/** Optode geometry, GET /api/sessions/{id}/probe (docs 4.7a). Units mm; x right, y nose, z up. */
+export type Probe = {
+  montage: string;
+  sources: Optode[];
+  detectors: Optode[];
+  landmarks: { label: string; x: number; y: number; pos3d: Vec3 }[];
+  head3d: { ellipsoid_radii_mm: Vec3; cortex_depth_mm: number; points: { label: string; pos3d: Vec3 }[] };
+  pairs: ProbePair[];
 };
 
 export type EventMsg = {
@@ -167,6 +214,7 @@ export type ServerMsg =
   | { type: "beat"; t: number; ibi_ms: number; source: Source }
   | VitalsMsg
   | QualityMsg
+  | ChannelsMsg
   | EventMsg
   | PhaseMsg
   | { type: "error"; code: string; message: string; fatal: boolean }

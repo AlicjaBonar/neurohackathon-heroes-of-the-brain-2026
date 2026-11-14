@@ -4,6 +4,7 @@ import { BackButton, Button } from "@/components/ui/Button";
 import { GlassPanel, ProgressBar } from "@/components/ui/Card";
 import type { Exercise, SourceIn, Summary } from "@/api/types";
 import { Avatar } from "@/features/avatar/Avatar";
+import { BrainMapCard } from "@/features/brain/BrainMapCard";
 import type { AvatarConfig } from "@/features/avatar/avatarConfig";
 import { cx, formatDuration } from "@/lib/utils";
 import { describeEvent, EXERCISE_TITLES, SESSION_PHASE_LABELS, STAGE_LABELS, WARNING_TEXT } from "./labels";
@@ -192,6 +193,12 @@ export function SessionScreen({
           )}
           <VitalsPanel vitals={vitals} paced={state.phase === "resonance_breathing"} />
         </div>
+        <BrainMapCard
+          sessionId={state.sessionId}
+          channels={state.channels}
+          qualityChannels={state.quality?.channels}
+          breath={frame?.breath.signal ?? null}
+        />
       </section>
     </AppShell>
   );

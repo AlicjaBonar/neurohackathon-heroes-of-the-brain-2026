@@ -4,6 +4,7 @@ import type {
   Exercise,
   History,
   Persona,
+  Probe,
   SessionCreated,
   SourceIn,
   Summary,
@@ -28,6 +29,7 @@ export const api = {
   createSession: (body: { user_id: string; source: SourceIn; protocol: string[] }) =>
     requestJson<SessionCreated>("sessions", json("POST", body)),
   finishSession: (id: string) => requestJson<Summary>(`sessions/${id}/finish`, json("POST")),
+  probe: (id: string) => getJson<Probe>(`sessions/${id}/probe`),
   summary: (id: string) => getJson<Summary>(`sessions/${id}/summary`),
   holdEnd: (id: string) =>
     requestJson<{ accepted: boolean }>(`sessions/${id}/events`, json("POST", { name: "hold_end_button" })),
