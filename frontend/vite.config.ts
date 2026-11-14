@@ -11,4 +11,11 @@ export default defineConfig({
       "@": sourceDirectory,
     },
   },
+  // Dev: the backend (uvicorn on :8000) is reached through the proxy, so no CORS is needed.
+  server: {
+    proxy: {
+      "/api": "http://localhost:8000",
+      "/ws": { target: "ws://localhost:8000", ws: true },
+    },
+  },
 });

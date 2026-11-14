@@ -2,6 +2,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { GlassPanel } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
 import { ScreenTitle, StepIndicator } from "@/components/ui/Page";
+import type { User } from "@/api/types";
 import { Avatar, type HairColor } from "@/features/avatar/Avatar";
 import { ProfileForm } from "./ProfileForm";
 
@@ -26,7 +27,7 @@ function AvatarPreviewPanel({ hair }: { hair: HairColor }) {
         <Icon name="wave" size={16} /> OPTYCZNA TOMOGRAFIA KORY
       </div>
       <Avatar hair={hair} />
-      <CalibrationBadge label="Kalibracja fNIRS" value="SCI 96%" />
+      <CalibrationBadge label="Kalibracja fNIRS" value="po podłączeniu opaski" />
     </GlassPanel>
   );
 }
@@ -34,11 +35,11 @@ function AvatarPreviewPanel({ hair }: { hair: HairColor }) {
 export function ProfileScreen({
   hair,
   onHairChange,
-  onNext,
+  onDone,
 }: {
   hair: HairColor;
   onHairChange: (hair: HairColor) => void;
-  onNext: () => void;
+  onDone: (user: User) => void;
 }) {
   return (
     <AppShell>
@@ -50,7 +51,7 @@ export function ProfileScreen({
       />
       <section className="split profile-grid">
         <AvatarPreviewPanel hair={hair} />
-        <ProfileForm hair={hair} onHairChange={onHairChange} onSubmit={onNext} />
+        <ProfileForm hair={hair} onHairChange={onHairChange} onDone={onDone} />
       </section>
     </AppShell>
   );

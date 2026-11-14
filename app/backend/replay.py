@@ -45,7 +45,10 @@ class RecordingNotFound(Exception):
 
 @lru_cache(maxsize=1)
 def _files():
-    return list_files()
+    try:
+        return list_files()
+    except Exception as e:      # no data/ folder (the recordings are not in the repo)
+        raise RecordingNotFound("Brak nagrań SNIRF w data/ – użyj źródła 'mock'.") from e
 
 
 def parse_id(rec_id: str) -> tuple[str, int, int]:
