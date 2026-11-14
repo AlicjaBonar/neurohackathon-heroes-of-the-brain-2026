@@ -11,6 +11,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from . import pipeline as P
 from . import signal as S
 from .io import load_snirf
 
@@ -55,8 +56,8 @@ def process_file(row: pd.Series, age: float | None = None) -> tuple[dict, dict, 
     pt = rec.pair_table()
     i760 = I[:, [rec.channels.index[(rec.channels.pair == p) & (rec.channels.wavelength == 760)][0] for p in rec.pairs]]
     i850 = I[:, [rec.channels.index[(rec.channels.pair == p) & (rec.channels.wavelength == 850)][0] for p in rec.pairs]]
-    od760, od850 = S.optical_density(i760), S.optical_density(i850)
-    sci = S.scalp_coupling_index(od760, od850, fs)
+    H = P.hemo(rec, age=age)                     # MNE: OD -> SCI -> TDDR -> Beer-Lambert
+    sci = H.sci
     sat760 = S.flatline_fraction(np.nan_to_num(i760)); sat850 = S.flatline_fraction(np.nan_to_num(i850))
     chans = pt.reset_index().assign(
         mean_i760=np.nanmean(i760, 0), mean_i850=np.nanmean(i850, 0),
@@ -90,7 +91,7 @@ def process_file(row: pd.Series, age: float | None = None) -> tuple[dict, dict, 
         feats["short_sci"] = float(np.median(sci[chans.short.to_numpy()]))
 
     # ------------------------------------------------------------- haemoglobin
-    hbo, hbr = S.mbll(S.fill_nan(od760), S.fill_nan(od850), pt.distance_mm.to_numpy(), age=age)
+    hbo, hbr = H.hbo[:n], H.hbr[:n]
     use = good & long_
     if use.sum() == 0:
         use = long_
@@ -116,8 +117,8 @@ def process_file(row: pd.Series, age: float | None = None) -> tuple[dict, dict, 
     # ------------------------------------------------------------- cardiac: HR, HRV, pulse shape
     card = S.cardiac_component(hbo, fs, use)
     feats["hr_spectral_bpm"] = S.heart_rate_spectral(card, fs)
-    beats = S.detect_beats(card, fs, feats["hr_spectral_bpm"])
-    feats.update(S.hrv_metrics(beats))
+    beats = P.beats(hbo, fs, use)                # NeuroKit2 ppg_clean + ppg_peaks
+    feats.update(P.hrv(beats))                   # NeuroKit2 hrv_time
     feats["cardiac_amp_uM"] = float(np.nanmedian(np.std(S.bandpass(hbo_g, fs, 0.7, min(3.0, fs / 2 * 0.9)), 0)))
     if fs > 50:  # pulse waveform only meaningful at high sampling rate
         raw_card = S.bandpass(hbo_g, fs, 0.5, 10.0).mean(1)
@@ -133,7 +134,9 @@ def process_file(row: pd.Series, age: float | None = None) -> tuple[dict, dict, 
 
     # ------------------------------------------------------------- respiration (spontaneous)
     slow = S.bandpass(hbo_g, fs, 0.05, 0.8).mean(1)
-    feats["resp_rate_bpm"], feats["resp_peak_prom"] = S.resp_rate_spectral(slow, fs)
+    slow10 = np.interp(np.arange(0, len(slow) / fs, 0.1), np.arange(len(slow)) / fs, slow)
+    feats["resp_rate_bpm"] = P.resp_rate(slow10, 10.0)                     # NeuroKit2 rsp_rate
+    feats["resp_rate_spectral_bpm"], feats["resp_peak_prom"] = S.resp_rate_spectral(slow, fs)
     feats["slow_osc_rate_bpm"], _ = S.resp_rate_spectral(slow, fs, band=(0.05, 0.6))
 
     # ------------------------------------------------------------- motion (aux)
@@ -145,7 +148,9 @@ def process_file(row: pd.Series, age: float | None = None) -> tuple[dict, dict, 
             acc_resp = S.bandpass(A, fs, 0.05, 0.8)
             # dominant breathing-band axis
             ax = int(np.argmax(acc_resp.std(0)))
-            feats["acc_resp_rate_bpm"], feats["acc_resp_peak_prom"] = S.resp_rate_spectral(acc_resp[:, ax], fs)
+            a10 = np.interp(np.arange(0, n / fs, 0.1), np.arange(n) / fs, acc_resp[:, ax])
+            feats["acc_resp_rate_bpm"] = P.resp_rate(a10, 10.0)
+            _, feats["acc_resp_peak_prom"] = S.resp_rate_spectral(acc_resp[:, ax], fs)
             feats["acc_slow_rate_bpm"], _ = S.resp_rate_spectral(acc_resp[:, ax], fs, band=(0.05, 0.6))
 
     # ------------------------------------------------------------- task-specific

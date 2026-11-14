@@ -28,6 +28,8 @@ data/fnirs_high_freq_supine/{subjects_description.csv, data/{baseline,BH}/*.snir
 .venv/Scripts/python scripts/01_extract_features.py   # cechy ze wszystkich 288 plików (~1 min)
 .venv/Scripts/python scripts/02_explore.py            # wykresy + tabele + summary.json
 .venv/Scripts/python scripts/03_predictability.py     # korelacje cząstkowe + predykcja LOSO (~15 min)
+# opcjonalnie: niezależne sprawdzenie MNE w Cedalion (osobne środowisko POZA repo, patrz nagłówek skryptu)
+%USERPROFILE%/.venvs/hob-cedalion/Scripts/python scripts/04_crosscheck_cedalion.py
 ```
 
 ## Backend aplikacji (FastAPI + SQLite + WebSocket z mockiem)
@@ -63,6 +65,7 @@ Szybki przepływ: `POST /api/users` → `POST /api/sessions` → WebSocket → `
 |---|---|
 | `io.py` | `load_snirf(path)` → `Recording` (natężenie, kanały z odległościami, znaczniki, akcelerometr/żyroskop, brakujące próbki, pozycje optod); `list_files(dataset)` – inwentarz plików z ID osoby, zadaniem i sesją |
 | `subjects.py` | `load_subjects("dot"/"supine")` – oczyszczone metryczki: angielskie nazwy kolumn, skale liczbowe włosów (0–4), Fitzpatrick 1–6, BMI, leki |
+| `pipeline.py` | **standardowe przetwarzanie**: MNE-Python (OD, SCI, TDDR, Beer-Lambert z DPF zależnym od wieku) + NeuroKit2 (uderzenia serca, HRV, częstość oddechu); `hemo(rec, age)`, `beats`, `hrv`, `resp_rate` |
 | `signal.py` | OD, prawo Beera-Lamberta z DPF zależnym od wieku, SCI, filtry, widma, tętno, detekcja uderzeń, HRV, szablon fali tętna, częstość oddechu, metryki ruchu, epoki |
 | `features.py` | `process_file(row, age)` – komplet cech z jednego nagrania + uśrednione odpowiedzi na zdarzenia |
 
@@ -71,13 +74,13 @@ Przykład:
 ```python
 import sys; sys.path.insert(0, "src")
 from hob.io import list_files, load_snirf
-from hob.subjects import load_subjects
-from hob import signal as S
+from hob import pipeline as P, signal as S
 
 files = list_files("supine")
 rec = load_snirf(files.path[0])
-od760, od850 = S.optical_density(rec.wl(760)), S.optical_density(rec.wl(850))
-hbo, hbr = S.mbll(od760, od850, rec.pair_table().distance_mm.values, age=23)
+H = P.hemo(rec, age=23)                 # MNE: OD -> SCI -> TDDR -> Beer-Lambert; H.hbo, H.hbr [uM], H.sci
+beats = P.beats(H.hbo, H.fs)            # NeuroKit2
+print(P.hrv(beats))                     # HR, RMSSD, SDNN
 acc, gyro = S.split_aux(rec.aux)
 ```
 

@@ -135,7 +135,7 @@ frontend (web/mobile)  ──REST──►  backend (FastAPI, Python, src/hob)
 | GET | `/api/exercises` | katalog ćwiczeń z parametrami |
 | POST | `/api/sessions` | nowa sesja: użytkownik, źródło, protokół |
 | GET | `/api/sessions/{id}` | stan sesji (faza, czasy) |
-| GET | `/api/sessions/{id}/probe` | geometria optod do mapy kanałów |
+| GET | `/api/sessions/{id}/probe` | geometria optod: mapa 2D głowy + współrzędne 3D, normalne, punkty 10-10 (4.7a) |
 | POST | `/api/sessions/{id}/phases` | start lub koniec fazy (`baseline_pre`, `exercise`, `baseline_post`) |
 | POST | `/api/sessions/{id}/events` | zdarzenia od użytkownika (np. `hold_end_button`) |
 | POST | `/api/sessions/{id}/finish` | zamknięcie sesji, wyliczenie podsumowania |
@@ -146,7 +146,7 @@ frontend (web/mobile)  ──REST──►  backend (FastAPI, Python, src/hob)
 | POST | `/api/demo/reset` | usunięcie danych demo (`is_demo = 1`) i ponowne seedowanie (7.6) |
 
 **WebSocket:** `/ws/sessions/{id}` (szczegóły protokołu w sekcji 8.4)
-- serwer → klient: `hello`, `frame`, `vitals`, `beat`, `quality`, `event`, `phase`, `error`, `pong`, `end`,
+- serwer → klient: `hello`, `frame`, `vitals`, `beat`, `quality`, `channels`, `event`, `phase`, `error`, `pong`, `end`,
 - klient → serwer: `command` (start fazy, symulacja ruchu w demo), opcjonalnie `ping`.
 
 ## 4. Modele danych (kontrakt)
@@ -246,7 +246,7 @@ Frontend animuje serce awatara na każde rzeczywiste uderzenie, a nie z interwa�
 }
 ```
 
-- `resonance.score` = 0–100, przeskalowany udział mocy 0,07–0,13 Hz względem linii bazowej osoby. W danych: spoczynek ~0,09, SPB ~0,17.
+- `resonance.score` = 0–100, przeskalowany udział mocy 0,07–0,13 Hz względem linii bazowej osoby. W danych (DOT, mediana): spoczynek ~0,07, SPB ~0,16.
 - `phase_lock` występuje tylko w ćwiczeniu z pacerem.
 - Pola z niską pewnością (`confidence` < 0,5) frontend wyszarza.
 
@@ -269,6 +269,52 @@ Frontend animuje serce awatara na każde rzeczywiste uderzenie, a nie z interwa�
 ```
 
 Statusy kanału: `good`, `weak` (SCI < 0,7), `saturated` (natężenie przy limicie ~4,99), `dark` (brak światła).
+
+### 4.7a Mapa mózgu 3D: `GET /probe` + strumień `channels` (co 0,5 s)
+
+**Geometria (raz, przez REST):** `GET /api/sessions/{id}/probe`
+
+```json
+{
+  "montage": "dot_frontal",
+  "coords": "head_unit_circle",
+  "sources":   [{ "id": 1, "x": 0.12, "y": 0.91, "pos3d": [10.2, 95.1, 18.0] }],
+  "detectors": [{ "id": 1, "x": 0.05, "y": 0.80, "pos3d": [4.1, 88.0, 40.3] }],
+  "landmarks": [{ "label": "Fpz", "x": 0.0, "y": 0.95, "pos3d": [-1.6, 103.2, 5.6] }],
+  "head3d": {
+    "units": "mm", "frame": "x: right, y: nose, z: up; origin = midpoint T7-T8",
+    "ellipsoid_radii_mm": [83.5, 103.3, 110.1], "cortex_depth_mm": 15,
+    "points": [{ "label": "Cz", "pos3d": [-1.6, -4.0, 110.1] }]
+  },
+  "pairs": [
+    { "index": 0, "pair": "S6_D4", "source": 6, "detector": 4, "distance_mm": 30.1, "short": false,
+      "label": "AFF6h", "x": 0.39, "y": 0.736,
+      "pos3d": [48.3, 80.8, 32.0], "normal": [0.486, 0.812, 0.322], "cortex3d": [41.0, 68.6, 27.2] }
+  ]
+}
+```
+
+- **3D** (`pos3d`, mm): układ głowy, x w prawo, y do nosa, z do góry, środek między T7 i T8. Pochodzi z prawdziwych pozycji optod w plikach SNIRF.
+  - `pairs[].pos3d`: środek kanału na skórze. `normal`: kierunek od środka głowy (do ułożenia plamki koloru na powierzchni).
+  - `pairs[].cortex3d`: ten sam punkt 15 mm w głąb, gdzie fNIRS jest najbardziej czułe. Do rysowania na modelu mózgu.
+  - `head3d.points`: wszystkie punkty 10-10 (133 w DOT, 130 w supine). Wystarczą do zbudowania siatki głowy (np. otoczka wypukła w three.js) albo do dopasowania gotowego modelu głowy lub mózgu. `ellipsoid_radii_mm` to prostsza alternatywa: elipsoida jako głowa.
+- **2D** (`x`, `y`): ta sama mapa jako płaski widok z góry (Cz w (0, 0), promień głowy = 1, nos u góry). Przydatne jako zapasowy widok.
+- `label`: najbliższy punkt 10-10, do podpisów i tooltipów.
+- W mocku 3D jest wyliczone z mapy 2D na sferze o promieniu 95 mm (`source` w `channels` = `simulated`).
+
+**Wartości (WebSocket, 2× na s):**
+
+```json
+{ "type": "channels", "t": 12.5,
+  "hbo": [0.214, null, -0.082, 0.536],
+  "hbr": [-0.041, null, 0.012, -0.090],
+  "scale_uM": 1.31, "source": "real" }
+```
+
+- `hbo[i]`, `hbr[i]` odpowiadają `probe.pairs[i]` (pole `index`). Wartości to zmiany stężenia w µM (filtr 0,005–0,3 Hz).
+- `null`: kanał zły (słaby, przesterowany albo ciemny). Rysować jako szary lub pominąć.
+- `scale_uM`: stała skala koloru dla nagrania (95. percentyl |HbO|). Proponowane mapowanie: `v / scale_uM` przycięte do [−1, 1], potem paleta rozbieżna (niebieski–biały–czerwony).
+- W fazach symulowanych replayu (`movement`, `hr_recovery`) wiadomość nie przychodzi. Frontend trzyma ostatni stan albo wyszarza mapę.
 
 ### 4.8 Strumień: `event`
 
@@ -625,8 +671,9 @@ export type PhaseMsg   = { type: "phase"; t: number; phase: PhaseName; state: "s
 export type HelloMsg   = { type: "hello"; protocol: 1; session_id: string; fs_hz: number };
 export type ErrorMsg   = { type: "error"; code: string; message: string; fatal: boolean };
 export type EndMsg     = { type: "end"; reason: "finished" | "aborted" | "source_ended"; summary_url: string };
+export type ChannelsMsg = { type: "channels"; t: number; hbo: (number | null)[]; hbr: (number | null)[]; scale_uM: number; source: Source };
 
-export type ServerMsg = HelloMsg | FrameMsg | BeatMsg | VitalsMsg | QualityMsg | EventMsg | PhaseMsg | ErrorMsg | EndMsg | { type: "pong"; t: number };
+export type ServerMsg = HelloMsg | FrameMsg | BeatMsg | VitalsMsg | QualityMsg | ChannelsMsg | EventMsg | PhaseMsg | ErrorMsg | EndMsg | { type: "pong"; t: number };
 
 export type ClientMsg =
   | { type: "command"; action: "start_phase"; phase: PhaseName }
@@ -712,6 +759,7 @@ klient                                   serwer
 | `frame` (10 Hz), `beat` | `useRef` / zewnętrzny store bez re-renderu (np. Zustand z `subscribe`) | awatar, pacer i wykres na żywo czytają w `requestAnimationFrame` |
 | `vitals` (1 Hz), `quality`, `phase` | stan Zustand (selektory) | karty z liczbami, paski |
 | `event` | kolejka w store + toast | licznik bezdechu, weryfikacja poleceń |
+| `channels` (2 Hz) | ref / store bez re-renderu | mapa 3D: aktualizacja kolorów materiału w pętli renderowania three.js, z interpolacją między dwiema ostatnimi wiadomościami |
 
 ```ts
 // frontend/src/api/useSessionStream.ts (szkic)

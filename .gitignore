@@ -1,9 +1,49 @@
+# --- data (licensed for the hackathon only) -------------------------------------
 data/*
-.venv/
-__pycache__/
-# large intermediate files derived from the (hackathon-only) data
+app_data/
+
+# large intermediate files derived from the data
 results/arrays.pkl
 results/channels.csv
 results/log_*.txt
-app_data/
 
+# --- Python environments (any name, anywhere) -----------------------------------
+.venv/
+.venv*/
+venv/
+venv*/
+env/
+.conda/
+**/site-packages/
+pyvenv.cfg
+
+# --- Python caches / builds -----------------------------------------------------
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+*.egg-info/
+build/
+dist/
+.coverage
+htmlcov/
+
+# --- Node / frontend ------------------------------------------------------------
+node_modules/
+.pnpm-store/
+.vite/
+*.tsbuildinfo
+
+# --- logs (incl. pysnirf2.log from Cedalion), editors, OS -----------------------
+*.log
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- secrets --------------------------------------------------------------------
+.env
+.env.*

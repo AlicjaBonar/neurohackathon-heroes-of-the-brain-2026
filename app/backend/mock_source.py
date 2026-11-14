@@ -22,9 +22,14 @@ from . import metrics as M
 SRC = "simulated"
 PAIRS = [("S1_D1", 30.0), ("S2_D1", 23.0), ("S3_D2", 23.0), ("S4_D2", 30.0), ("S5_D3", 30.0),
          ("S5_D4", 30.0), ("S6_D4", 30.0), ("S6_D5", 30.0), ("S7_D4", 10.0), ("S8_D5", 10.0)]
-_SRC_XY = {1: (-0.55, 0.30), 2: (-0.30, 0.42), 3: (0.30, 0.42), 4: (0.55, 0.30),
-           5: (-0.25, 0.05), 6: (0.25, 0.05), 7: (-0.08, 0.18), 8: (0.42, 0.18)}
-_DET_XY = {1: (-0.42, 0.20), 2: (0.42, 0.20), 3: (-0.50, 0.00), 4: (0.00, 0.10), 5: (0.50, 0.00)}
+# head unit circle (Cz = 0,0, nose up, radius 1), roughly like the supine prefrontal montage
+_SRC_XY = {1: (-0.42, 0.86), 2: (-0.20, 0.92), 3: (0.20, 0.92), 4: (0.42, 0.86),
+           5: (-0.30, 0.62), 6: (0.30, 0.62), 7: (-0.05, 0.78), 8: (0.30, 0.74)}
+_DET_XY = {1: (-0.34, 0.76), 2: (0.34, 0.76), 3: (-0.45, 0.62), 4: (0.00, 0.70), 5: (0.45, 0.62)}
+_LANDMARKS = {"Nz": (0.0, 1.0), "Fpz": (0.0, 0.95), "Fp1": (-0.29, 0.92), "Fp2": (0.29, 0.92),
+              "AF7": (-0.55, 0.80), "AF3": (-0.24, 0.80), "AFz": (0.0, 0.80), "AF4": (0.24, 0.80),
+              "AF8": (0.55, 0.80), "F3": (-0.40, 0.62), "Fz": (0.0, 0.62), "F4": (0.40, 0.62),
+              "Cz": (0.0, 0.0), "T7": (-0.92, 0.0), "T8": (0.92, 0.0)}
 
 
 @dataclass
@@ -243,6 +248,7 @@ class MockSource:
         pulse = 0.03 * math.sin(2 * math.pi * self.beat_acc)
         hbo = self.drift + 0.12 * self.signal + pulse + self.hold_rise
         hbr = -0.06 * self.drift - 0.03 * self.signal + 0.55 * self.hold_rise + 0.01 * rng.gauss(0, 1)
+        self._hbo, self._hbr = hbo, hbr
 
         # --- motion
         self.m_ou = self._ou(self.m_ou, 2.0, 0.05, dt)
@@ -346,12 +352,45 @@ class MockSource:
                     sci_median=scis[len(scis) // 2], motion_level="medium" if moving else "low",
                     channels=chans, warnings=warns)
 
+    @staticmethod
+    def _to3d(x: float, y: float, r: float = 95.0) -> list[float]:
+        """Head-map point (Cz centre, radius 1 at the equator) -> point on a sphere [mm]."""
+        rho = math.hypot(x, y)
+        th, ph = rho * math.pi / 2, math.atan2(y, x)
+        return [round(r * math.sin(th) * math.cos(ph), 1), round(r * math.sin(th) * math.sin(ph), 1),
+                round(r * math.cos(th), 1)]
+
     def probe(self) -> dict:
         pairs = []
-        for name, dist in PAIRS:
+        for i, (name, dist) in enumerate(PAIRS):
             s, d = (int(x[1:]) for x in name.split("_"))
-            pairs.append(dict(pair=name, source=s, detector=d, distance_mm=dist, short=dist < 15))
-        return dict(montage=self.montage, coords="2d_normalized",
-                    sources=[dict(id=k, x=x, y=y) for k, (x, y) in _SRC_XY.items()],
-                    detectors=[dict(id=k, x=x, y=y) for k, (x, y) in _DET_XY.items()],
+            mx = (_SRC_XY[s][0] + _DET_XY[d][0]) / 2
+            my = (_SRC_XY[s][1] + _DET_XY[d][1]) / 2
+            near = min(_LANDMARKS, key=lambda k: (_LANDMARKS[k][0] - mx) ** 2 + (_LANDMARKS[k][1] - my) ** 2)
+            p3 = self._to3d(mx, my)
+            nrm = [round(v / 95.0, 3) for v in p3]
+            pairs.append(dict(index=i, pair=name, source=s, detector=d, distance_mm=dist, short=dist < 15,
+                              x=round(mx, 3), y=round(my, 3), label=near, pos3d=p3, normal=nrm,
+                              cortex3d=[round(v - 15.0 * n, 1) for v, n in zip(p3, nrm)]))
+        return dict(montage=self.montage, coords="head_unit_circle",
+                    orientation="x: right, y: nose; Cz = (0, 0), head radius = 1",
+                    sources=[dict(id=k, x=x, y=y, pos3d=self._to3d(x, y)) for k, (x, y) in _SRC_XY.items()],
+                    detectors=[dict(id=k, x=x, y=y, pos3d=self._to3d(x, y)) for k, (x, y) in _DET_XY.items()],
+                    landmarks=[dict(label=k, x=x, y=y, pos3d=self._to3d(x, y)) for k, (x, y) in _LANDMARKS.items()],
+                    head3d=dict(units="mm", frame="x: right, y: nose, z: up; origin = head centre",
+                                ellipsoid_radii_mm=[95.0, 95.0, 95.0], cortex_depth_mm=15.0,
+                                points=[dict(label=k, pos3d=self._to3d(x, y)) for k, (x, y) in _LANDMARKS.items()]),
                     pairs=pairs)
+
+    def channels(self) -> dict:
+        """Per-channel HbO/HbR for the brain map: common signal x channel gain + local noise."""
+        if not hasattr(self, "_gain"):
+            self._gain = [(0.6 if d < 15 else 1.0) * self.rng.uniform(0.6, 1.4) for _, d in PAIRS]
+            self._noise = [0.0] * len(PAIRS)
+        hbo, hbr = getattr(self, "_hbo", 0.0), getattr(self, "_hbr", 0.0)
+        vals_o, vals_r = [], []
+        for k, g in enumerate(self._gain):
+            self._noise[k] = 0.9 * self._noise[k] + 0.03 * self.rng.gauss(0, 1)
+            vals_o.append(round(g * hbo + self._noise[k], 3))
+            vals_r.append(round(g * hbr - 0.3 * self._noise[k], 3))
+        return dict(t=round(self.t, 2), hbo=vals_o, hbr=vals_r, scale_uM=0.4, source=SRC)

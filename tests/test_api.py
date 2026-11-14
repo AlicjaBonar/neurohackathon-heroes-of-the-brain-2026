@@ -69,6 +69,8 @@ def test_ws_baseline_session_end_to_end(client, user):
         while (m := ws.receive_json())["type"] != "error":
             pass
         assert m["code"] == "phase_not_in_protocol"
+        ch = wait_for(ws, lambda m: m["type"] == "channels")
+        assert len(ch["hbo"]) == 10 and ch["source"] == "simulated"
         for phase in ("baseline_pre", "baseline_post"):
             ws.send_json(dict(type="command", action="start_phase", phase=phase))
             seen = set()
@@ -214,8 +216,15 @@ def test_replay_persona_session_over_ws(client):
         ws.send_json(dict(type="command", action="start_phase", phase="baseline_pre"))
         q = wait_for(ws, lambda m: m["type"] == "quality")
         assert len(q["channels"]) == 95
+        ch = wait_for(ws, lambda m: m["type"] == "channels")
+        assert len(ch["hbo"]) == len(ch["hbr"]) == 95 and ch["source"] == "real" and ch["scale_uM"] > 0
+        assert any(v is None for v in ch["hbo"])                       # bad channels are null
         wait_for(ws, lambda m: m["type"] == "phase" and m["state"] == "finished")
         s = client.post(f"/api/sessions/{sid}/finish").json()
         wait_for(ws, lambda m: m["type"] == "end")
     assert s["sources"]["hr"] == "real"
-    assert len(client.get(f"/api/sessions/{sid}/probe").json()["pairs"]) == 95
+    probe = client.get(f"/api/sessions/{sid}/probe").json()
+    assert len(probe["pairs"]) == 95 and len(probe["head3d"]["points"]) > 100
+    p0 = probe["pairs"][0]
+    assert {"x", "y", "label", "pos3d", "normal", "cortex3d"} <= p0.keys()
+    assert all(q["pos3d"][1] > 0 for q in probe["pairs"])            # frontal montage: in front of T7-T8
