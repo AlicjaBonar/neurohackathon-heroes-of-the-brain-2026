@@ -71,6 +71,8 @@ async def _validation_error(_: Request, e: RequestValidationError):
 
 class Avatar(BaseModel):
     hair_color: Optional[str] = None
+    hair_texture: Optional[str] = None
+    hair_length: Optional[str] = None
     skin_tone: Optional[int] = Field(None, ge=1, le=6)
 
 

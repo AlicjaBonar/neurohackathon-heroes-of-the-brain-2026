@@ -47,10 +47,13 @@ export function AvatarControls({
   avatar,
   onChange,
   layout = "inline",
+  showSex = true,
 }: {
   avatar: AvatarConfig;
   onChange: (avatar: AvatarConfig) => void;
   layout?: "inline" | "centered";
+  /** Hide when the surrounding form already has its own sex field. */
+  showSex?: boolean;
 }) {
   const set = (patch: Partial<AvatarConfig>) => onChange({ ...avatar, ...patch });
   const bald = avatar.texture === "bald";
@@ -60,12 +63,14 @@ export function AvatarControls({
 
   return (
     <div className={cx("avatar-controls", layout === "centered" && "is-centered")}>
-      <Segmented
-        label="Płeć"
-        options={SEX_OPTIONS}
-        value={avatar.sex}
-        onChange={(sex) => set({ sex, length: sex === "F" ? "long" : "short" })}
-      />
+      {showSex && (
+        <Segmented
+          label="Płeć"
+          options={SEX_OPTIONS}
+          value={avatar.sex}
+          onChange={(sex) => set({ sex, length: sex === "F" ? "long" : "short" })}
+        />
+      )}
       <Segmented
         label="Rodzaj włosów"
         options={TEXTURE_OPTIONS}

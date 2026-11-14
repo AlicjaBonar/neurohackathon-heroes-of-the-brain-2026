@@ -55,3 +55,51 @@ export function bodyWidthScale(weight: number) {
   const w = weight > 0 ? weight : DEFAULT_AVATAR.weight;
   return Math.min(1.4, Math.max(0.8, w / 70));
 }
+
+const HAIR_COLOR_BY_NAME: Record<string, string> = {
+  grey: "#c7c7cc",
+  gray: "#c7c7cc",
+  blonde: "#d9b36b",
+  brown: "#5c3821",
+  black: "#141212",
+  red: "#b34d21",
+};
+
+/** What the backend stores about a user's avatar (`hair_color` may be a hex or a name like "blonde"/"none"). */
+export type StoredAvatar = {
+  hair_color?: string | null;
+  hair_texture?: string | null;
+  hair_length?: string | null;
+} | null;
+
+/** Builds the 3D avatar config from a saved/demo user profile. */
+export function avatarFromUser(user: {
+  sex?: Sex | null;
+  weight_kg?: number | null;
+  avatar?: StoredAvatar;
+}): AvatarConfig {
+  const sex = user.sex ?? DEFAULT_AVATAR.sex;
+  const stored = user.avatar;
+  const hair = stored?.hair_color ?? undefined;
+  const textures: HairTexture[] = ["straight", "wavy", "curly", "bald"];
+  const storedTexture = textures.find((t) => t === stored?.hair_texture);
+  const bald = hair === "none" || storedTexture === "bald";
+  return {
+    sex,
+    texture: bald ? "bald" : (storedTexture ?? DEFAULT_AVATAR.texture),
+    length: stored?.hair_length === "short" || stored?.hair_length === "long"
+      ? stored.hair_length
+      : sex === "F" ? "long" : "short",
+    color: hair?.startsWith("#") ? hair : (hair && HAIR_COLOR_BY_NAME[hair]) || DEFAULT_AVATAR.color,
+    weight: user.weight_kg ? Math.round(user.weight_kg) : DEFAULT_AVATAR.weight,
+  };
+}
+
+/** Avatar payload to save with a user profile. */
+export function avatarToStored(avatar: AvatarConfig): NonNullable<StoredAvatar> {
+  return {
+    hair_color: avatar.texture === "bald" ? "none" : avatar.color,
+    hair_texture: avatar.texture,
+    hair_length: avatar.length,
+  };
+}

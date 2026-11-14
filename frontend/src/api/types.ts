@@ -4,7 +4,12 @@ export type Source = "real" | "simulated" | "user";
 
 // ---------------------------------------------------------------- users
 
-export type Avatar = { hair_color?: string | null; skin_tone?: number | null };
+export type Avatar = {
+  hair_color?: string | null;
+  hair_texture?: string | null;
+  hair_length?: string | null;
+  skin_tone?: number | null;
+};
 
 export type UserIn = {
   name: string;
