@@ -276,18 +276,16 @@ def sources(dataset: Optional[str] = None, task: Optional[str] = None):
             recs.append(dict(id=rid, dataset=r.dataset, subject=int(r.subject), task=r.task,
                              session=int(r.session), duration_s=round(r.duration_s, 1), fs_hz=round(r.fs, 2),
                              has_markers=bool(r.n_events), suggested_for=suggest.get(r.task, []),
-                             available=False))
+                             available=True))
     return dict(recordings=recs,
                 mock=[dict(type="mock", label="Symulacja", available=True)],
-                note="Odtwarzanie nagrań (replay) jest w przygotowaniu; dostępne jest źródło mock.")
+                note="replay: podaj recording_id osoby ('dot/03', 'supine/10'); fazy sesji są mapowane na jej nagrania.")
 
 
 # ---------------------------------------------------------------------------- sessions
 
 @app.post("/api/sessions", status_code=201)
 def create_session(body: SessionIn):
-    if body.source.type == "replay":
-        raise ApiError(501, "replay_not_implemented", "Odtwarzanie nagrań nie jest jeszcze gotowe; użyj source.type='mock'.")
     bad = [p for p in body.protocol if p not in ex.PHASES]
     if bad:
         raise ApiError(422, "unknown_phase", f"Unknown phases: {bad}. Allowed: {list(ex.PHASES)}")
@@ -295,13 +293,30 @@ def create_session(body: SessionIn):
     if len(exs) > 1:
         raise ApiError(422, "multiple_exercises", "A session contains at most one exercise phase.")
     with db.get_conn() as conn:
-        _user_or_404(conn, body.user_id)
+        u = _user_or_404(conn, body.user_id)
+    rec_id, device = None, dict(fs_hz=10.0, n_pairs=10, montage="mock_prefrontal", source="simulated")
+    if body.source.type == "replay":
+        from . import replay
+        rec_id = body.source.recording_id or u["persona_source"]
+        if not rec_id:
+            raise ApiError(422, "recording_required", "source.recording_id is required (e.g. 'dot/03' or 'supine/10')")
+        try:
+            avail = replay.available_phases(rec_id)
+        except replay.RecordingNotFound as e:
+            raise ApiError(404, "recording_not_found", str(e))
+        missing = [p for p in body.protocol if p not in avail]
+        if missing:
+            raise ApiError(422, "phase_not_available",
+                           f"{missing} not available for {rec_id}. Available: {sorted(avail)}")
+        ds = replay.parse_id(rec_id)[0]
+        device = dict(fs_hz=10.0, n_pairs=95 if ds == "dot" else 10,
+                      montage="dot_frontal" if ds == "dot" else "sparse_prefrontal", source="real")
+    with db.get_conn() as conn:
         s = repo.create_session(conn, user_id=body.user_id, source_type=body.source.type,
-                                recording_id=body.source.recording_id, protocol=body.protocol,
+                                recording_id=rec_id, protocol=body.protocol,
                                 exercise=exs[0] if exs else "baseline_only")
     runtime.baseline_opts[s["id"]] = body.source.baseline_s
-    return dict(session_id=s["id"], ws_url=f"/ws/sessions/{s['id']}",
-                device=dict(fs_hz=10.0, n_pairs=10, montage="mock_prefrontal"),
+    return dict(session_id=s["id"], ws_url=f"/ws/sessions/{s['id']}", device=device, recording_id=rec_id,
                 phase="setup", protocol=s["protocol"], exercise=s["exercise"])
 
 
@@ -315,7 +330,13 @@ def get_session(sid: str):
 @app.get("/api/sessions/{sid}/probe")
 def probe(sid: str):
     with db.get_conn() as conn:
-        _session_or_404(conn, sid)
+        s = _session_or_404(conn, sid)
+    ls = runtime.sessions.get(sid)
+    if ls:
+        return ls.src.probe()
+    if s["source_type"] == "replay":
+        from .replay import ReplaySource
+        return ReplaySource(s["recording_id"], None).probe()
     from .mock_source import MockSource
     return MockSource(seed=0).probe()
 

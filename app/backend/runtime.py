@@ -36,7 +36,14 @@ class LiveSession:
         self.user = user
         self.exercise = session["exercise"]
         self.status = session["status"]
-        self.src = MockSource(baseline_s=baseline_s)
+        if session["source_type"] == "replay":
+            from .replay import ReplaySource
+            age = ((user or {}).get("derived") or {}).get("age")
+            self.src = ReplaySource(session["recording_id"], age, baseline_s)
+            self.kind = "real"
+        else:
+            self.src = MockSource(baseline_s=baseline_s)
+            self.kind = "simulated"
         self.phase: str | None = None
         self.phases: dict[str, PhaseAcc] = {}
         self.phase_log: list[dict] = []
@@ -60,7 +67,10 @@ class LiveSession:
             return "phase_already_running"
         if phase in ex.EXERCISE_IDS and phase != self.exercise:
             return "phase_not_in_protocol"
-        dur = self.src.start_phase(phase)
+        try:
+            dur = self.src.start_phase(phase)
+        except Exception as e:                     # e.g. phase not available for this recording
+            return f"phase_not_available: {e}"
         self.phase = phase
         self.phases[phase] = PhaseAcc(t0=self.src.t)
         self.outbox.append(dict(type="phase", t=round(self.src.t, 2), phase=phase, state="started", duration_s=dur))
@@ -150,7 +160,7 @@ class LiveSession:
         path.write_text(json.dumps(dict(
             session_id=self.id, step_s=1, phases=self.phase_log, series=self.timeline,
             events=[{k: v for k, v in e.items() if v is not None} for e in self.events],
-            sources={k: "simulated" for k in self.timeline if k not in ("t", "phase")},
+            sources={k: self.kind for k in self.timeline if k not in ("t", "phase")},
         ), ensure_ascii=False), encoding="utf-8")
         with db.get_conn() as conn:
             repo.finish_session(conn, self.id, self.user_id, summary, rows, str(path))
@@ -170,7 +180,9 @@ def _r(x, nd=1):
 
 def build_summary(s: LiveSession) -> tuple[dict, list[dict]]:
     """Summary JSON (APP_SPEC 4.10) + metric rows (APP_SPEC 7.3)."""
-    src = "simulated"
+    src = s.kind                                         # "real" for replay, "simulated" for mock
+    sim_ex = s.exercise in ("movement", "hr_recovery")   # no data for these -> always simulated
+    ex_src = "simulated" if sim_ex else src
     P = s.phases
 
     def stats(name):
@@ -244,6 +256,9 @@ def build_summary(s: LiveSession) -> tuple[dict, list[dict]]:
                         text=f"Ruch „{dd['target']}”: wykryto {dd['detected_reps']}/{dd['reps']} powtórzeń."))
     if quality["measured_s"] and quality["motion_s"] > 0.2 * quality["measured_s"]:
         ins.append(dict(kind="tip", text="Sporo ruchu w trakcie pomiaru – wyniki mogą być mniej dokładne."))
+    if src == "real" and after:
+        ins.append(dict(kind="info", text="Dane z prawdziwego nagrania. Pomiar „po” pochodzi z dalszej części "
+                                          "spoczynku sprzed ćwiczenia (w zbiorze brak pomiaru po ćwiczeniu)."))
 
     summary = dict(
         session_id=s.id, exercise=s.exercise, duration_s=round(s.src.t, 1), phases=s.phase_log,
@@ -255,13 +270,15 @@ def build_summary(s: LiveSession) -> tuple[dict, list[dict]]:
                   for m in moves],
         recovery=dict(recovery, source="simulated") if recovery else None,
         crf_mets=_r(crf), quality=quality, insights=ins,
-        sources={k: src for k in ("hr", "hrv", "resp", "resonance", "holds", "movement", "recovery")},
+        sources=dict(hr=src, hrv=src, resp=src, resonance=ex_src, holds=ex_src,
+                     movement="simulated", recovery="simulated"),
     )
 
     rows = []
-    def add(name, phase, value, conf=None):
+    def add(name, phase, value, conf=None, source=None):
         if value is not None:
-            rows.append(dict(name=name, phase=phase, value=value, source=src, confidence=conf))
+            rows.append(dict(name=name, phase=phase, value=value, confidence=conf,
+                             source=source or (ex_src if phase == "exercise" else src)))
     for ph, st in (("before", before), ("after", after)):
         if st:
             add("hr_bpm", ph, st["hr_bpm"]); add("rmssd_ms", ph, st["rmssd_ms"])
@@ -274,9 +291,10 @@ def build_summary(s: LiveSession) -> tuple[dict, list[dict]]:
         add("hold_s", "exercise", max(h["hold_s"] for h in holds))
         add("hold_hbo_peak_uM", "exercise", max(h["hbo_rise_uM"] for h in holds))
     if moves:
-        add("reps_verified", "exercise", sum(m["data"]["detected_reps"] for m in moves if m["name"] == "command_verified"))
+        add("reps_verified", "exercise", sum(m["data"]["detected_reps"] for m in moves if m["name"] == "command_verified"),
+            source="simulated")
     if recovery:
-        add("hr_recovery_drop_bpm", "after", recovery["drop_1min_bpm"])
+        add("hr_recovery_drop_bpm", "after", recovery["drop_1min_bpm"], source="simulated")
     add("good_pct", "session", quality["good_pct"])
     add("motion_s", "session", quality["motion_s"])
     add("crf_mets", "session", _r(crf))

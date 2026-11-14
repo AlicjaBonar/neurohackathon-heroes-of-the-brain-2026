@@ -46,9 +46,14 @@ Specyfikacja: [docs/APP_SPEC.md](docs/APP_SPEC.md).
 | `app/backend/main.py` | endpointy REST + WebSocket `/ws/sessions/{id}` |
 | `app/backend/runtime.py` | stan sesji na żywo (w pamięci), fazy, podsumowanie |
 | `app/backend/mock_source.py` | symulator sygnału (oddech, tętno, HbO, ruch, bezdech) |
+| `app/backend/replay.py` | odtwarzanie prawdziwych nagrań SNIRF tej samej osoby (wymaga `data/`) |
 | `app/backend/exercises.py` | katalog ćwiczeń i ich przebieg |
 | `app/backend/seed.py` | persony demo z prawdziwych wyników (`results/*.csv`) |
 | `app/backend/db.py`, `repo.py`, `schema.sql` | SQLite (`app_data/hob.db`) |
+
+Źródła danych w sesji (`POST /api/sessions`, pole `source`):
+- `{"type": "mock"}`: symulator, działa wszędzie;
+- `{"type": "replay"}` dla persony demo (np. `user_id: "demo_dot_03"`) albo `{"type": "replay", "recording_id": "dot/03"}`: prawdziwe nagrania tej osoby. DOT: pomiar, oddech rezonansowy (SPB), krótkie i maksymalny bezdech; supine: pomiar i bezdech. Ruch i powrót tętna zawsze z mocka.
 
 Szybki przepływ: `POST /api/users` → `POST /api/sessions` → WebSocket → `{"type":"command","action":"start_phase","phase":"baseline_pre"}` → … → `POST /api/sessions/{id}/finish` → `GET /api/sessions/{id}/summary`.
 

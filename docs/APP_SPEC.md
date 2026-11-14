@@ -173,10 +173,12 @@ frontend (web/mobile)  ──REST──►  backend (FastAPI, Python, src/hob)
 // POST /api/sessions
 {
   "user_id": "u_01",
-  "source": { "type": "mock", "baseline_s": 120 },
+  "source": { "type": "replay", "recording_id": "dot/03", "baseline_s": 120 },
   "protocol": ["baseline_pre", "resonance_breathing", "baseline_post"]
 }
-// typy źródeł: "replay" | "mock"
+// typy źródeł: "replay" (prawdziwe nagrania osoby; recording_id "dot/XX" | "supine/XX",
+//               dla persony demo można pominąć) | "mock" (symulator)
+// replay: niedostępne fazy -> 422 phase_not_available (np. supine nie ma SPB)
 ```
 
 ```json
@@ -364,18 +366,20 @@ Trafność detektora mierzymy offline na wygenerowanych przykładach (wiele gest
 
 ## 5. Skąd dane w demo
 
-| Element | Źródło | Status |
-|---|---|---|
-| Pomiar spoczynkowy | DOT RS (pierwsze 2 min) lub supine BS | real |
-| Oddech rezonansowy | DOT SPB tej samej osoby (pacer zsynchronizowany ze znacznikami 21–28) | real |
-| Krótkie bezdechy | DOT BH (znaczniki 71/72) | real |
-| Bezdech maksymalny | supine BH (znane końce do walidacji detektora) | real |
-| Historia i rytm dnia | 4 sesje RS i SPB z jednego dnia w DOT = persona z 4 „dniami” | real (przemapowane w czasie) |
-| Profil persony | `subjects_description.csv` (wiek, płeć, BMI, aktywność) | real |
-| Wyzwanie ruchowe | gesty syntetyczne w realnym szumie akcelerometru i żyroskopu (4.9) | simulated |
-| Powrót tętna po wysiłku | model wykładniczy z τ zależnym od aktywności | simulated |
+Źródło `replay` (`app/backend/replay.py`) mapuje fazy sesji na nagrania **tej samej osoby**:
 
-**Uwaga:** po ćwiczeniu SPB w danych nie ma osobnego pomiaru spoczynkowego. „Po” bierzemy z ostatnich 20 s pliku SPB albo z następnego RS (godziny później), co trzeba oznaczyć. Druga opcja: `baseline_post` = `simulated` na podstawie zmian zaobserwowanych między RS a SPB.
+| Faza | DOT (`dot/XX`, sesja n = 1–4 z sufiksu, domyślnie 1) | supine (`supine/XX`) | Status |
+|---|---|---|---|
+| przed sesją (setup) | RS{n} w pętli | BS w pętli | real |
+| `baseline_pre` | RS{n} od 0 s | BS od 0 s | real |
+| `resonance_breathing` | SPB{n}; pacer i zdarzenia `cycle` ze znaczników 21–28 | niedostępne | real |
+| `short_holds` | BH1 do pierwszego bloku maksymalnego; bezdechy ze znaczników 72/76 | niedostępne | real |
+| `breath_hold` | BH1, 1. maksymalny bezdech; koniec z prostego detektora (szczyt HbO+HbR, pewność 0,5) | BH, 1. bezdech; koniec ze znacznika `1` (pewność 1,0) | real |
+| `baseline_post` | RS{n} od 300 s | BS od 300 s | real, ale **to nie jest pomiar po ćwiczeniu** (brak w danych) – podsumowanie dodaje o tym informację |
+| `movement`, `hr_recovery` | mock | mock | simulated |
+| Historia i rytm dnia | 4 sesje RS i SPB z jednego dnia (seed) | 1 sesja bezdechu | real |
+
+Przetwarzanie jest liczone raz na plik (filtry zero-fazowe na całym nagraniu) i odtwarzane w czasie rzeczywistym. Prawdziwe urządzenie miałoby opóźnienie rzędu 1–2 s.
 
 ## 6. Kolejność implementacji
 

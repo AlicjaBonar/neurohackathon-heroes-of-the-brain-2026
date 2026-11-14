@@ -1,4 +1,6 @@
 """Backend tests: REST, a short real-time WebSocket session, exercise logic, demo seed."""
+import pathlib
+
 import pytest
 from starlette.websockets import WebSocketDisconnect
 
@@ -42,7 +44,9 @@ def test_catalogue_and_validation(client, user):
     r = client.post("/api/sessions", json=dict(user_id=user["id"], protocol=["baseline_pre", "dance"]))
     assert r.json()["error"]["code"] == "unknown_phase"
     r = client.post("/api/sessions", json=dict(user_id=user["id"], source=dict(type="replay")))
-    assert r.status_code == 501
+    assert r.json()["error"]["code"] == "recording_required"
+    r = client.post("/api/sessions", json=dict(user_id=user["id"], source=dict(type="replay", recording_id="dot/99")))
+    assert r.status_code == 404 or r.json()["error"]["code"] == "recording_not_found"
 
 
 # ------------------------------------------------------------------------------ WebSocket (real time)
@@ -87,11 +91,12 @@ def test_ws_baseline_session_end_to_end(client, user):
 
 # ------------------------------------------------------------------------------ exercise logic (no server)
 
-def live(user, protocol, baseline_s=30):
+def live(user, protocol, baseline_s=30, recording_id=None):
     with db.get_conn() as conn:
         exs = [p for p in protocol if p not in ("baseline_pre", "baseline_post")]
-        s = repo.create_session(conn, user_id=user["id"], source_type="mock", recording_id=None,
-                                protocol=protocol, exercise=exs[0] if exs else "baseline_only")
+        s = repo.create_session(conn, user_id=user["id"], source_type="replay" if recording_id else "mock",
+                                recording_id=recording_id, protocol=protocol,
+                                exercise=exs[0] if exs else "baseline_only")
     return runtime.LiveSession(s, user, baseline_s)
 
 
@@ -161,3 +166,56 @@ def test_demo_personas_from_real_data(client):
     assert client.get("/api/users/demo_dot_01/fitness").json()["crf_mets"] is not None
     r = client.post("/api/demo/reset").json()
     assert r["seeded"] and r["removed_users"] == r["users"]
+
+
+# ------------------------------------------------------------------------------ replay of real recordings
+
+HAS_DATA = (pathlib.Path(__file__).resolve().parents[1] / "data" / "dot_montage_sitting" / "data").exists()
+needs_data = pytest.mark.skipif(not HAS_DATA or not seed.available(), reason="data/ or results/ missing")
+
+
+@needs_data
+def test_replay_dot_resonance_is_real(user):
+    ls = live(user, ["baseline_pre", "resonance_breathing", "baseline_post"], baseline_s=60, recording_id="dot/03")
+    run_phase(ls, "baseline_pre")
+    msgs = run_phase(ls, "resonance_breathing")
+    frames = [m for m in msgs if m["type"] == "frame"]
+    assert frames[0]["breath"]["source"] == "real"
+    assert sum(m["type"] == "event" and m["name"] == "cycle" for m in msgs) == 15     # from markers 21-27
+    assert sum("pacer" in f for f in frames) >= 1400
+    run_phase(ls, "baseline_post")
+    s = ls.finish()
+    assert s["sources"]["hr"] == "real" and 40 < s["before"]["hr_bpm"] < 110
+    assert s["scores"]["resonance"] > 30 and s["scores"]["phase_lock"] is not None
+    assert any("prawdziwego nagrania" in i["text"] for i in s["insights"])
+
+
+@needs_data
+def test_replay_supine_hold_end_from_marker(user):
+    ls = live(user, ["breath_hold"], recording_id="supine/10")
+    msgs = run_phase(ls, "breath_hold")
+    end = [m for m in msgs if m["type"] == "event" and m["name"] == "hold_end_detected"][0]
+    assert end["data"]["by"] == "marker" and end["confidence"] == 1.0 and 5 < end["data"]["hold_s"] < 110
+    assert ls.finish()["holds"][0]["hold_s"] == end["data"]["hold_s"]
+
+
+@needs_data
+def test_replay_persona_session_over_ws(client):
+    r = client.post("/api/sessions", json=dict(user_id="demo_sup_10", protocol=["baseline_pre", "resonance_breathing"],
+                                               source=dict(type="replay")))
+    assert r.json()["error"]["code"] == "phase_not_available"           # supine has no SPB
+    r = client.post("/api/sessions", json=dict(user_id="demo_dot_03", protocol=["baseline_pre"],
+                                               source=dict(type="replay", baseline_s=2)))
+    body = r.json()
+    assert body["recording_id"] == "dot/03" and body["device"]["source"] == "real"
+    sid = body["session_id"]
+    with client.websocket_connect(f"/ws/sessions/{sid}") as ws:
+        assert ws.receive_json()["type"] == "hello"
+        ws.send_json(dict(type="command", action="start_phase", phase="baseline_pre"))
+        q = wait_for(ws, lambda m: m["type"] == "quality")
+        assert len(q["channels"]) == 95
+        wait_for(ws, lambda m: m["type"] == "phase" and m["state"] == "finished")
+        s = client.post(f"/api/sessions/{sid}/finish").json()
+        wait_for(ws, lambda m: m["type"] == "end")
+    assert s["sources"]["hr"] == "real"
+    assert len(client.get(f"/api/sessions/{sid}/probe").json()["pairs"]) == 95
