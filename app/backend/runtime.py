@@ -55,6 +55,7 @@ class LiveSession:
         self.ended = False
         self._next_vitals = 1.0
         self._next_quality = 0.0
+        self._next_channels = 0.0
 
     # ------------------------------------------------------------------ commands
     def start_phase(self, phase: str) -> str | None:
@@ -130,6 +131,12 @@ class LiveSession:
             self._next_quality += 1.0 if setup else 5.0
             self.last_quality = dict(type="quality", **self.src.quality(setup))
             msgs.append(self.last_quality)
+
+        if t >= self._next_channels:                       # brain map, 2x per second
+            self._next_channels += 0.5
+            ch = self.src.channels()
+            if ch:
+                msgs.append(dict(type="channels", **ch))
 
         if out.phase_finished and self.phase:
             self._finish_phase()

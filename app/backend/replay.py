@@ -19,6 +19,7 @@ import re
 import sys
 from functools import lru_cache
 
+import h5py
 import numpy as np
 from scipy import signal as ss
 
@@ -144,7 +145,17 @@ class Prepared:
         theta = np.angle(ss.hilbert(self.breath))           # HbO minimum -> theta = pi -> phase 0.2
         self.phase = (theta / (2 * np.pi) - 0.5 + 0.2) % 1.0
         self.events = rec.events.assign(code=rec.events.code.astype(str).str.strip())
-        self.probe = _probe(rec)
+        self.probe = _probe(rec, path)
+
+        # brain map: per-pair HbO/HbR on the 10 Hz grid (order = probe["pairs"]); bad channels -> NaN
+        idx = np.minimum((self.t * fs).astype(int), n - 1)
+        valid = status == "good"
+        self.map_hbo = S.bandpass(hbo, fs, 0.005, 0.3)[idx].astype(np.float32)
+        self.map_hbr = S.bandpass(hbr, fs, 0.005, 0.3)[idx].astype(np.float32)
+        self.map_hbo[:, ~valid] = np.nan
+        self.map_hbr[:, ~valid] = np.nan
+        vals = np.abs(self.map_hbo[:, valid])
+        self.map_scale = round(float(np.nanpercentile(vals, 95)), 3) if vals.size else 1.0
 
     def idx(self, pos: float) -> int:
         return int(min(max(pos * FS_OUT, 0), len(self.t) - 1))
@@ -157,17 +168,63 @@ class Prepared:
         return self.events.onset[self.events.code.isin(codes)].to_numpy()
 
 
-def _probe(rec) -> dict:
-    pts = np.vstack([rec.src_pos[:, :2], rec.det_pos[:, :2]])
-    c, sc = pts.mean(0), np.abs(pts - pts.mean(0)).max() or 1.0
-    norm = lambda p: [round(float(v), 3) for v in (p[:2] - c) / sc]  # noqa: E731
+CORTEX_DEPTH_MM = 15.0     # fNIRS is most sensitive ~1-2 cm below the scalp (infopack)
+MAP_LANDMARKS = ("Nz", "Fpz", "Fp1", "Fp2", "AF7", "AF3", "AFz", "AF4", "AF8",
+                 "F7", "F3", "Fz", "F4", "F8", "FC5", "FC1", "FCz", "FC2", "FC6", "Cz", "T7", "T8")
+
+
+def _probe(rec, path) -> dict:
+    """Optode layout for a top-down head map: SNIRF 2D positions centred on Cz and scaled so that
+    the head radius (Cz -> Nz) is 1; x to the right, y towards the nose. Each pair gets the midpoint
+    between its source and detector and the nearest 10-10 label."""
+    with h5py.File(path, "r") as h:
+        pr = h["nirs/probe"]
+        src2, det2 = pr["sourcePos2D"][()][:, :2], pr["detectorPos2D"][()][:, :2]
+        lm2 = pr["landmarkPos2D"][()][:, :2]
+        src3, det3, lm3 = pr["sourcePos3D"][()][:, :3], pr["detectorPos3D"][()][:, :3], pr["landmarkPos3D"][()][:, :3]
+        labels = [x.decode() if isinstance(x, bytes) else str(x) for x in pr["landmarkLabels"][()]]
+    lm = dict(zip(labels, lm2))
+    centre = lm.get("Cz", np.zeros(2))
+    radius = float(np.linalg.norm(lm["Nz"] - centre)) if "Nz" in lm else float(np.abs(lm2).max())
+    norm = lambda p: (np.asarray(p) - centre) / radius  # noqa: E731
+    r3 = lambda v: round(float(v), 3)  # noqa: E731
+    lm_names = [k for k in labels if k in lm]
+    lm_xy = np.array([norm(lm[k]) for k in lm_names])
+    # 3D head frame [mm]: x right, y nose, z up; origin = midpoint T7-T8 (scalp ~ sphere around it)
+    lm3d = dict(zip(labels, lm3))
+    c3 = (lm3d["T7"] + lm3d["T8"]) / 2 if "T7" in lm3d and "T8" in lm3d else lm3.mean(0)
+    v3 = lambda q: [round(float(v), 1) for v in (np.asarray(q) - c3)]  # noqa: E731
     pt = rec.pair_table()
-    return dict(montage="dot_frontal" if len(rec.pairs) > 20 else "sparse_prefrontal", coords="2d_normalized",
-                sources=[dict(id=i + 1, x=norm(p)[0], y=norm(p)[1]) for i, p in enumerate(rec.src_pos)],
-                detectors=[dict(id=i + 1, x=norm(p)[0], y=norm(p)[1]) for i, p in enumerate(rec.det_pos)],
-                pairs=[dict(pair=p, source=int(r.source), detector=int(r.detector),
-                            distance_mm=round(float(r.distance_mm), 1), short=bool(r.distance_mm < 15))
-                       for p, r in pt.iterrows()])
+    pairs = []
+    for p, r in pt.iterrows():
+        mid = (norm(src2[int(r.source) - 1]) + norm(det2[int(r.detector) - 1])) / 2
+        near = lm_names[int(np.argmin(np.linalg.norm(lm_xy - mid, axis=1)))]
+        m3 = (src3[int(r.source) - 1] + det3[int(r.detector) - 1]) / 2 - c3
+        nrm = m3 / (np.linalg.norm(m3) + 1e-9)
+        pairs.append(dict(index=len(pairs), pair=p, source=int(r.source), detector=int(r.detector),
+                          distance_mm=round(float(r.distance_mm), 1), short=bool(r.distance_mm < 15),
+                          x=r3(mid[0]), y=r3(mid[1]), label=near,
+                          pos3d=[round(float(v), 1) for v in m3], normal=[r3(v) for v in nrm],
+                          cortex3d=[round(float(v), 1) for v in m3 - CORTEX_DEPTH_MM * nrm]))
+    return dict(montage="dot_frontal" if len(rec.pairs) > 20 else "sparse_prefrontal",
+                coords="head_unit_circle", orientation="x: right, y: nose; Cz = (0, 0), head radius = 1",
+                sources=[dict(id=i + 1, x=r3(norm(q)[0]), y=r3(norm(q)[1]), pos3d=v3(src3[i])) for i, q in enumerate(src2)],
+                detectors=[dict(id=i + 1, x=r3(norm(q)[0]), y=r3(norm(q)[1]), pos3d=v3(det3[i])) for i, q in enumerate(det2)],
+                landmarks=[dict(label=k, x=r3(norm(lm[k])[0]), y=r3(norm(lm[k])[1]), pos3d=v3(lm3d[k]))
+                           for k in MAP_LANDMARKS if k in lm],
+                head3d=_head3d(labels, lm3, c3),
+                pairs=pairs)
+
+
+def _head3d(labels, lm3, c3) -> dict:
+    """All 10-10 points (enough to build a head mesh, e.g. convex hull) + an ellipsoid fit."""
+    pts = lm3 - c3
+    up = pts[pts[:, 2] > -30]
+    radii = [round(float(np.abs(up[:, 0]).max()), 1), round(float(np.abs(up[:, 1]).max()), 1),
+             round(float(up[:, 2].max()), 1)]
+    return dict(units="mm", frame="x: right, y: nose, z: up; origin = midpoint T7-T8",
+                ellipsoid_radii_mm=radii, cortex_depth_mm=CORTEX_DEPTH_MM,
+                points=[dict(label=l, pos3d=[round(float(v), 1) for v in q]) for l, q in zip(labels, pts)])
 
 
 @lru_cache(maxsize=12)
@@ -453,4 +510,14 @@ class ReplaySource:
 
     def probe(self) -> dict:
         return self.base.probe
+
+    def channels(self) -> dict | None:
+        """Per-channel HbO/HbR for the brain map (None during simulated phases)."""
+        if self.mode == "mock":
+            return None
+        r = self.cur
+        i = r.idx(self.pos)
+        clean = lambda a: [None if not np.isfinite(v) else round(float(v), 3) for v in a]  # noqa: E731
+        return dict(t=round(self.t, 2), hbo=clean(r.map_hbo[i]), hbr=clean(r.map_hbr[i]),
+                    scale_uM=r.map_scale, source=SRC)
 
