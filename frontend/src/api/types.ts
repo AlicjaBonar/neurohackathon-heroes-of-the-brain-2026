@@ -95,10 +95,13 @@ export type Insight = { kind: "positive" | "info" | "tip"; text: string };
 
 type Stats = { hr_bpm: number | null; rmssd_ms: number | null; resp_rate_bpm: number | null };
 
+export type PhaseSpan = { name: string; t0: number; t1: number };
+
 export type Summary = {
   session_id: string;
   exercise: string;
   duration_s: number;
+  phases?: PhaseSpan[];
   before: Stats | null;
   after: Stats | null;
   delta: { hr_bpm: number | null; rmssd_pct: number | null; resp_rate_bpm: number | null } | null;
@@ -110,6 +113,25 @@ export type Summary = {
   crf_mets: number | null;
   quality: { good_pct: number | null; motion_s: number; measured_s: number };
   insights: Insight[];
+  sources: Record<string, Source>;
+  /** Where the "after" rest comes from: live, the rest at the end of the recorded exercise, or a later part of the rest file. */
+  after_from?: "live" | "exercise_end" | "rest_recording" | null;
+};
+
+/** 1 Hz record of a finished session, GET /api/sessions/{id}/timeline. */
+export type Timeline = {
+  session_id: string;
+  step_s: number;
+  phases: PhaseSpan[];
+  series: {
+    t: number[];
+    phase: (string | null)[];
+    hr_bpm: (number | null)[];
+    breath_signal: (number | null)[];
+    resonance_score: (number | null)[];
+    motion_level: (number | null)[];
+  };
+  events: { t: number; name: string; data?: Record<string, unknown> }[];
   sources: Record<string, Source>;
 };
 

@@ -259,7 +259,8 @@ export function useLiveSession({
 
     (async () => {
       try {
-        protocol = ["baseline_pre", exercise];
+        // Rest before and after the exercise, so the summary can compare the two.
+        protocol = ["baseline_pre", exercise, "baseline_post"];
         const open = (src: SourceIn) =>
           api.createSession({ user_id: userId, source: { ...src, baseline_s: BASELINE_S }, protocol });
         // Replay needs the recordings in data/ and the phase to exist for that person;

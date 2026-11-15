@@ -8,6 +8,7 @@ import type {
   SessionCreated,
   SourceIn,
   Summary,
+  Timeline,
   User,
   UserIn,
 } from "./types";
@@ -30,6 +31,7 @@ export const api = {
     requestJson<SessionCreated>("sessions", json("POST", body)),
   finishSession: (id: string) => requestJson<Summary>(`sessions/${id}/finish`, json("POST")),
   probe: (id: string) => getJson<Probe>(`sessions/${id}/probe`),
+  timeline: (id: string) => getJson<Timeline>(`sessions/${id}/timeline`),
   summary: (id: string) => getJson<Summary>(`sessions/${id}/summary`),
   holdEnd: (id: string) =>
     requestJson<{ accepted: boolean }>(`sessions/${id}/events`, json("POST", { name: "hold_end_button" })),

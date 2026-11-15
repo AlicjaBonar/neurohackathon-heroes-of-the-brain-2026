@@ -20,7 +20,7 @@ export function Brand({ tagline = "ODDECH • RUCH • FLOW" }: { tagline?: stri
 type Health = { status: string; version: string; demo_data: boolean };
 
 /** Backend connection indicator (GET /api/health). */
-export function StatusPill() {
+export function StatusPill({ english = false }: { english?: boolean }) {
   const [health, setHealth] = useState<Health | "offline" | null>(null);
   useEffect(() => {
     const controller = new AbortController();
@@ -32,7 +32,9 @@ export function StatusPill() {
   return (
     <div className="status-pill">
       <i />{" "}
-      {health === "offline" ? "Brak połączenia z backendem" : health ? "Backend połączony" : "Łączenie…"}
+      {english
+        ? health === "offline" ? "Backend offline" : health ? "Backend connected" : "Connecting…"
+        : health === "offline" ? "Brak połączenia z backendem" : health ? "Backend połączony" : "Łączenie…"}
       {health && health !== "offline" && <b>v{health.version}</b>}
     </div>
   );

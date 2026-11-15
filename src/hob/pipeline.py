@@ -127,6 +127,9 @@ def resp_rate(x: np.ndarray, fs: float) -> float:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             r = nk.rsp_rate(np.asarray(x, float), sampling_rate=fs, method="trough")
+            if not np.isfinite(r).any():
+                # Short windows (e.g. 60 s live) give all-NaN on the raw band; cleaning first fixes it.
+                r = nk.rsp_rate(nk.rsp_clean(np.asarray(x, float), sampling_rate=fs), sampling_rate=fs, method="trough")
     except Exception:
         return np.nan
     r = r[np.isfinite(r)]

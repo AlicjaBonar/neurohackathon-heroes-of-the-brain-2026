@@ -35,6 +35,8 @@ from hob.io import list_files, load_snirf  # noqa: E402
 FS_OUT = 10.0
 SRC = "real"
 SAT_LEVEL = 4.9            # detector ceiling ~4.99 (EDA)
+PRE_OFFSET_S = 60.0
+SPB_POST_S = 20.0           # every SPB file ends with "post (20 s)" of free breathing (dataset description)
 POST_OFFSET_S = 300.0
 MOCK_PHASES = ("movement", "hr_recovery")
 
@@ -322,13 +324,25 @@ class ReplaySource:
             return self.mock.start_phase(name)
         self.mode, self.loop = "replay", False
         dot = self.ds == "dot"
-        if name in ("baseline_pre", "baseline_post"):
+        if name == "baseline_post" and getattr(self, "_spb", None) is not None:
+            # Real rest after the exercise: every SPB file ends with 20 s of free breathing after the
+            # last set ("post (20 s)", dataset description). The windows before it hold the last set.
+            r = self._spb
+            self.post_from = "exercise_end"
+            self._play(r, max(0.0, r.duration - SPB_POST_S), r.duration)
+        elif name in ("baseline_pre", "baseline_post"):
             r = self.base
-            start = 0.0 if name == "baseline_pre" else min(POST_OFFSET_S, max(0.0, r.duration - self.baseline_s))
+            # Pre starts 60 s in, so the 60 s HRV / breathing windows are already full of real rest.
+            if name == "baseline_post":
+                self.post_from = "rest_recording"   # no post-exercise rest in the data for this exercise
+            start = (min(PRE_OFFSET_S, max(0.0, r.duration - self.baseline_s)) if name == "baseline_pre"
+                     else min(POST_OFFSET_S, max(0.0, r.duration - self.baseline_s)))
             self._play(r, start, min(r.duration, start + self.baseline_s))
         elif name == "resonance_breathing":
             r = self._prep("SPB", self.sess)
-            self._play(r, 0.0, r.duration)
+            self._spb = r
+            # Stop before the final 20 s rest: that part is played as baseline_post.
+            self._play(r, 0.0, max(0.0, r.duration - SPB_POST_S))
             self.cycle_marks = np.sort(r.markers(["21", "23", "25", "27"]))
             for k, on in enumerate(self.cycle_marks, 1):
                 self.sched.append((on, dict(name="cycle", data=dict(index=k, set=(k - 1) // 5 + 1, in_set=(k - 1) % 5 + 1))))

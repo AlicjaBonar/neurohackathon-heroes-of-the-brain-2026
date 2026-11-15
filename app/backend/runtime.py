@@ -113,7 +113,8 @@ class LiveSession:
             if acc:
                 if v["hr"]["bpm"] and not v["hr"]["frozen"]:
                     acc.hr.append(v["hr"]["bpm"])
-                if v["hrv"]["rmssd_ms"] and v["hrv"]["window_s"] >= 30:
+                # >= 15 s: ultra-short RMSSD is usable from ~10 s (Munoz et al. 2015); rests last 20 s.
+                if v["hrv"]["rmssd_ms"] and v["hrv"]["window_s"] >= 15:
                     acc.rmssd.append(v["hrv"]["rmssd_ms"])
                 if v["resp"]["rate_bpm"]:
                     acc.resp.append(v["resp"]["rate_bpm"])
@@ -280,6 +281,8 @@ def build_summary(s: LiveSession) -> tuple[dict, list[dict]]:
                   for m in moves],
         recovery=dict(recovery, source="simulated") if recovery else None,
         crf_mets=_r(crf), quality=quality, insights=ins,
+        # where "after" comes from: live / exercise_end (SPB post rest) / rest_recording (later part of the rest file)
+        after_from=getattr(s.src, "post_from", "live") if after else None,
         sources=dict(hr=src, hrv=src, resp=src, resonance=ex_src, holds=ex_src,
                      movement="simulated", recovery="simulated"),
     )
