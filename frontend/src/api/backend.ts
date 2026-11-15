@@ -2,6 +2,7 @@ import { getJson, requestJson } from "./rest";
 import type {
   Dashboard,
   Exercise,
+  Fitness,
   History,
   Persona,
   Probe,
@@ -23,8 +24,9 @@ export const api = {
   updateUser: (id: string, body: UserIn) => requestJson<User>(`users/${id}`, json("PUT", body)),
   getUser: (id: string) => getJson<User>(`users/${id}`),
   dashboard: (id: string) => getJson<Dashboard>(`users/${id}/dashboard`),
-  history: (id: string, metrics: string[], signal?: AbortSignal) =>
-    getJson<History>(`users/${id}/history?metrics=${metrics.join(",")}`, signal),
+  history: (id: string, metrics: string[], signal?: AbortSignal, byHour = false) =>
+    getJson<History>(`users/${id}/history?metrics=${metrics.join(",")}${byHour ? "&by_hour=true" : ""}`, signal),
+  fitness: (id: string, signal?: AbortSignal) => getJson<Fitness>(`users/${id}/fitness`, signal),
   exercises: () => getJson<Exercise[]>("exercises"),
   personas: () => getJson<Persona[]>("demo/personas"),
   createSession: (body: { user_id: string; source: SourceIn; protocol: string[] }) =>
