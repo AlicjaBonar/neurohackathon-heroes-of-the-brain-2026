@@ -11,7 +11,7 @@ Phase -> recording of the same person (APP_SPEC 5):
   resonance_breathing  DOT SPB{n} (pacer + cycles from markers 21-28)
   short_holds       DOT BH1 until the first maximal-hold block (markers 71/72)
   breath_hold       supine BH first hold (end from marker 1) | DOT BH1 first maximal hold (end by detector)
-  movement, hr_recovery  -> delegated to MockSource (no such data), flagged simulated
+  hr_recovery  -> delegated to MockSource (no such data), flagged simulated
 """
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ SAT_LEVEL = 4.9            # detector ceiling ~4.99 (EDA)
 PRE_OFFSET_S = 60.0
 SPB_POST_S = 20.0           # every SPB file ends with "post (20 s)" of free breathing (dataset description)
 POST_OFFSET_S = 300.0
-MOCK_PHASES = ("movement", "hr_recovery")
+MOCK_PHASES = ("hr_recovery",)
 
 
 class RecordingNotFound(Exception):
@@ -412,8 +412,6 @@ class ReplaySource:
             return self.mock.user_event(name)
         return False
 
-    def simulate_motion(self, gesture, reps, correct) -> bool:
-        return self.mode == "mock" and self.mock is not None and self.mock.simulate_motion(gesture, reps, correct)
 
     # ------------------------------------------------------------------ playback step
     def step(self, dt: float) -> StepOut:

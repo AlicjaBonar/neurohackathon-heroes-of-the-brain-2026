@@ -462,9 +462,6 @@ async def _read_commands(ws: WebSocket, ls: runtime.LiveSession) -> None:
             err = await _locked(ls, ls.start_phase, msg.get("phase", ""))
             if err:
                 error(err, f"Cannot start phase {msg.get('phase')}")
-        elif kind == "command" and action == "simulate_motion":
-            if not ls.src.simulate_motion(msg.get("gesture"), msg.get("reps"), bool(msg.get("correct", True))):
-                error("no_motion_command", "No pending movement command in the current phase")
         else:
             error("unknown_message", f"Unknown message type={kind} action={action}")
 

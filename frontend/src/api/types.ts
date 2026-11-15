@@ -108,7 +108,6 @@ export type Summary = {
   exercise_stats: { hr_bpm: number | null } | null;
   scores: { resonance?: number; phase_lock?: number | null; relaxation?: number } | null;
   holds: { t: number; hold_s: number; by: string; hbo_rise_uM: number; confidence: number }[];
-  movement: { target: string; reps: number; detected_reps: number; verified: boolean }[];
   recovery: { drop_1min_bpm: number; source: Source } | null;
   crf_mets: number | null;
   quality: { good_pct: number | null; motion_s: number; measured_s: number };
@@ -130,6 +129,8 @@ export type Timeline = {
     breath_signal: (number | null)[];
     resonance_score: (number | null)[];
     motion_level: (number | null)[];
+    /** Mean HbO without the cardiac pulse [µM]. */
+    hbo_uM?: (number | null)[];
   };
   events: { t: number; name: string; data?: Record<string, unknown> }[];
   sources: Record<string, Source>;
@@ -249,11 +250,4 @@ export type ServerMsg =
 
 export type ClientMsg =
   | { type: "command"; action: "start_phase"; phase: string }
-  | {
-      type: "command";
-      action: "simulate_motion";
-      gesture: string;
-      reps: number;
-      correct: boolean;
-    }
   | { type: "ping"; t: number };

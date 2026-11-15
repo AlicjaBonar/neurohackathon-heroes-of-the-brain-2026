@@ -42,8 +42,22 @@ export type SignalSample = {
   gap?: boolean;
 };
 
+/** One breath hold of the session; `rise` = HbO increase (µM), live while the hold lasts. */
+export type HoldRecord = {
+  kind: "short" | "max";
+  startT: number;
+  endT: number | null;
+  /** Mean HbO (trend) at the onset and the highest value since. */
+  hboStart: number | null;
+  hboPeak: number | null;
+  rise: number | null;
+  /** Duration reported by the backend at the end of the hold. */
+  holdS: number | null;
+};
+
 export type LiveState = {
-  status: "connecting" | "running" | "finishing" | "done" | "error";
+  /** "checking" = connected, waiting for a good signal before the protocol starts. */
+  status: "connecting" | "checking" | "running" | "finishing" | "done" | "error";
   error: string | null;
   sessionId: string | null;
   /** Latest per-channel HbO/HbR for the brain map (2 Hz). */
@@ -57,7 +71,12 @@ export type LiveState = {
   quality: QualityMsg | null;
   samples: SignalSample[];
   events: EventMsg[];
-  pendingCommand: EventMsg | null;
+  /** Breath holds so far (short and maximal). */
+  holds: HoldRecord[];
+  /** Number of paced breathing cycles so far (resonance breathing). */
+  cycles: number;
+  /** Highest heart rate in the current phase (HR recovery) and when it was reached. */
+  hrPeak: { bpm: number; t: number } | null;
   /** Countdown between breathing sets: set at the end of a paced set, cleared when pacing resumes. */
   rest: { startT: number; duration: number } | null;
   /** Countdown to the first paced set; cleared when the pacer starts. */
@@ -81,7 +100,9 @@ const INITIAL: LiveState = {
   quality: null,
   samples: [],
   events: [],
-  pendingCommand: null,
+  holds: [],
+  cycles: 0,
+  hrPeak: null,
   rest: null,
   lead: null,
   hold: null,
@@ -93,6 +114,9 @@ const SETS = 3;
 const REST_S = 60;
 /** Free breathing before the first set (backend exercises.plan). */
 const LEAD_IN_S = 30;
+
+/** The protocol starts once the signal has been "ready" this long (s). */
+const READY_HOLD_S = 3;
 
 /** Target breath height (0..1) for a pacer phase: 0 = start of inhale, 0.5 = peak. */
 const targetHeight = (phase: number) => (1 - Math.cos(2 * Math.PI * phase)) / 2;
@@ -113,6 +137,8 @@ export function useLiveSession({
   const [state, setState] = useState<LiveState>(INITIAL);
   const streamRef = useRef<LiveStream<ClientMsg> | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const startRef = useRef<() => void>(() => undefined);
+  const startedRef = useRef(false);
   const samplesRef = useRef<SignalSample[]>([]);
   const finishingRef = useRef(false);
   const lockRef = useRef<number | null>(null);
@@ -139,7 +165,15 @@ export function useLiveSession({
     let phaseName: string | null = null;
     let pacedNow = false;
     let setsDone = 0;
+    let readySince: number | null = null;
     finishingRef.current = false;
+    startedRef.current = false;
+    startRef.current = () => {
+      if (protocol.length && !phaseName && !startedRef.current) {
+        startedRef.current = true;
+        streamRef.current?.send({ type: "command", action: "start_phase", phase: protocol[0] });
+      }
+    };
     samplesRef.current = [];
     lockRef.current = null;
     setState(INITIAL);
@@ -147,7 +181,8 @@ export function useLiveSession({
     const handle = (msg: ServerMsg) => {
       switch (msg.type) {
         case "hello":
-          streamRef.current?.send({ type: "command", action: "start_phase", phase: protocol[0] });
+          // Signal check first; the protocol starts when the signal is ready (or the user says so).
+          setState((s) => ({ ...s, status: s.status === "connecting" ? "checking" : s.status }));
           break;
         case "frame": {
           const target = msg.pacer ? targetHeight(msg.pacer.target_phase) : null;
@@ -183,10 +218,19 @@ export function useLiveSession({
               rest = setsDone < SETS ? { startT: msg.t, duration: REST_S } : null;
             }
           }
+          const hboNow = msg.hb.hbo_trend_uM ?? msg.hb.hbo_uM;
           setState((s) => ({
             ...s,
             frame: msg,
             samples: samplesRef.current,
+            // Track the HbO peak of the hold in progress.
+            holds: s.holds.length && s.holds[s.holds.length - 1].endT === null
+              ? s.holds.map((h, i) => {
+                  if (i !== s.holds.length - 1) return h;
+                  const peak = Math.max(h.hboPeak ?? hboNow, hboNow);
+                  return { ...h, hboPeak: peak, rise: h.hboStart === null ? null : peak - h.hboStart };
+                })
+              : s.holds,
             lead: msg.pacer ? null : s.lead,
             ...(rest !== undefined && { rest }),
           }));
@@ -194,31 +238,58 @@ export function useLiveSession({
         }
         case "vitals":
           lockRef.current = msg.phase_lock?.value ?? null;
-          setState((s) => ({ ...s, vitals: msg }));
+          setState((s) => {
+            const bpm = msg.hr.bpm;
+            const peak = bpm && !msg.hr.frozen && (!s.hrPeak || bpm > s.hrPeak.bpm) ? { bpm, t: msg.t } : s.hrPeak;
+            return { ...s, vitals: msg, hrPeak: phaseName === "hr_recovery" ? peak : s.hrPeak };
+          });
           break;
         case "channels":
           setState((s) => ({ ...s, channels: msg }));
           break;
         case "quality":
+          // Auto-start after the signal has been ready for a few seconds.
+          if (!phaseName && !startedRef.current) {
+            readySince = msg.ready ? (readySince ?? msg.t) : null;
+            if (readySince !== null && msg.t - readySince >= READY_HOLD_S) startRef.current();
+          }
           setState((s) => ({ ...s, quality: msg }));
           break;
         case "event":
-          setState((s) => ({
-            ...s,
-            events: [...s.events.slice(-19), msg],
-            hold:
-              msg.name === "hold_start" && msg.data?.kind === "short"
-                ? { startT: msg.t, duration: Number(msg.data.target_s ?? 10) }
-                : msg.name === "hold_end_detected"
-                  ? null
-                  : s.hold,
-            pendingCommand:
-              msg.name === "command_issued"
-                ? msg
-                : msg.name === "command_verified" || msg.name === "command_failed"
-                  ? null
-                  : s.pendingCommand,
-          }));
+          setState((s) => {
+            let holds = s.holds;
+            if (msg.name === "hold_start") {
+              const last = samplesRef.current[samplesRef.current.length - 1];
+              const hbo = last ? (last.hboTrend ?? last.hbo) : null;
+              const kind: HoldRecord["kind"] = msg.data?.kind === "max" ? "max" : "short";
+              holds = [...holds, { kind, startT: msg.t, endT: null, hboStart: hbo, hboPeak: hbo, rise: 0, holdS: null }];
+            } else if (msg.name === "hold_end_detected" && holds.length) {
+              const d = msg.data ?? {};
+              holds = holds.map((h, i) =>
+                i === holds.length - 1
+                  ? {
+                      ...h,
+                      endT: msg.t,
+                      holdS: Number(d.hold_s ?? msg.t - h.startT),
+                      // The backend's rise also covers the ~15 s after the hold, when HbO peaks.
+                      rise: d.hbo_rise_uM !== undefined ? Number(d.hbo_rise_uM) : h.rise,
+                    }
+                  : h,
+              );
+            }
+            return {
+              ...s,
+              events: [...s.events.slice(-19), msg],
+              holds,
+              cycles: msg.name === "cycle" ? Number(msg.data?.index ?? s.cycles + 1) : s.cycles,
+              hold:
+                msg.name === "hold_start" && msg.data?.kind === "short"
+                  ? { startT: msg.t, duration: Number(msg.data.target_s ?? 10) }
+                  : msg.name === "hold_end_detected"
+                    ? null
+                    : s.hold,
+            };
+          });
           break;
         case "phase":
           if (msg.state === "started") {
@@ -234,6 +305,7 @@ export function useLiveSession({
               ...s,
               rest: null,
               hold: null,
+              hrPeak: null,
               lead:
                 msg.phase === "resonance_breathing" ? { startT: msg.t, duration: LEAD_IN_S } : null,
               status: "running",
@@ -299,16 +371,8 @@ export function useLiveSession({
     if (sid) void api.holdEnd(sid).catch(() => undefined);
   }, []);
 
-  const simulateMotion = useCallback((correct: boolean, cmd: EventMsg) => {
-    const data = cmd.data ?? {};
-    streamRef.current?.send({
-      type: "command",
-      action: "simulate_motion",
-      gesture: String(data.target ?? "nod"),
-      reps: Number(data.reps ?? 3),
-      correct,
-    });
-  }, []);
+  /** Skip the rest of the signal check and start the protocol now. */
+  const start = useCallback(() => startRef.current(), []);
 
-  return { state, finish, endHold, simulateMotion };
+  return { state, finish, endHold, start };
 }

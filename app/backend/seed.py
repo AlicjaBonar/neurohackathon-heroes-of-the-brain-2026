@@ -40,7 +40,7 @@ def _profile(s: pd.Series, label: str) -> dict:
 
 def _summary(sid, exercise, before, exercise_stats, scores, holds, crf, good_pct, note):
     return dict(session_id=sid, exercise=exercise, duration_s=None, phases=[], before=before, after=None,
-                delta=None, exercise_stats=exercise_stats, scores=scores, holds=holds, movement=[],
+                delta=None, exercise_stats=exercise_stats, scores=scores, holds=holds,
                 recovery=None, crf_mets=crf, quality=dict(good_pct=good_pct, motion_s=None, measured_s=None),
                 insights=[dict(kind="info", text=note)],
                 sources=dict(hr="real", hrv="real", resp="real", resonance="real", holds="real"))

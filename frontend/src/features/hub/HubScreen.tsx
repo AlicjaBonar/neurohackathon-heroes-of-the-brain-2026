@@ -143,6 +143,7 @@ export function HubScreen({
         open={openModal === "activity"}
         onClose={closeModal}
         exercises={exercises}
+        user={user}
         onSelect={(exercise) => onSession(exercise, source)}
       />
       <AvatarModal

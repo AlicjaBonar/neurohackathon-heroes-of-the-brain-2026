@@ -40,7 +40,7 @@ def test_user_crud_and_errors(client, user):
 
 
 def test_catalogue_and_validation(client, user):
-    assert len(client.get("/api/exercises").json()) == 5
+    assert len(client.get("/api/exercises").json()) == 4         # movement challenge removed
     r = client.post("/api/sessions", json=dict(user_id=user["id"], protocol=["baseline_pre", "dance"]))
     assert r.json()["error"]["code"] == "unknown_phase"
     r = client.post("/api/sessions", json=dict(user_id=user["id"], source=dict(type="replay")))
@@ -140,18 +140,6 @@ def test_breath_hold_button(user):
     end = [m for m in msgs if m["type"] == "event" and m["name"] == "hold_end_detected"][0]
     assert end["data"]["by"] == "button" and end["data"]["hold_s"] == pytest.approx(5, abs=0.3)
     assert ls.finish()["holds"][0]["by"] == "button"
-
-
-def test_movement_forced_fail(user):
-    ls = live(user, ["movement"])
-
-    def fail(m):
-        if m["type"] == "event" and m["name"] == "command_issued":
-            assert ls.src.simulate_motion("nod", 3, correct=False)
-
-    msgs = run_phase(ls, "movement", fail)
-    assert any(m["type"] == "event" and m["name"] == "command_failed" for m in msgs)
-    assert ls.finish()["movement"][0]["verified"] is False
 
 
 # ------------------------------------------------------------------------------ demo personas

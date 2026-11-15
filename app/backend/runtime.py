@@ -52,7 +52,7 @@ class LiveSession:
         self.phase_log: list[dict] = []
         self.events: list[dict] = []
         self.timeline: dict[str, list] = {k: [] for k in
-                                          ("t", "phase", "hr_bpm", "breath_signal", "resonance_score", "motion_level")}
+                                          ("t", "phase", "hr_bpm", "breath_signal", "resonance_score", "motion_level", "hbo_uM")}
         self.outbox: list[dict] = []        # messages produced outside tick() (phase start, errors)
         self.last_quality: dict | None = None
         self.ended = False
@@ -129,6 +129,8 @@ class LiveSession:
             tl["t"].append(round(t)); tl["phase"].append(self.phase)
             tl["hr_bpm"].append(v["hr"]["bpm"]); tl["breath_signal"].append(out.frame["breath"]["signal"])
             tl["resonance_score"].append(v["resonance"]["score"]); tl["motion_level"].append(out.frame["motion"]["level"])
+            hb = out.frame["hb"]                       # mean HbO without the cardiac pulse
+            tl["hbo_uM"].append(hb.get("hbo_trend_uM", hb["hbo_uM"]))
 
         if t >= self._next_quality:
             setup = self.phase is None and self.status == "setup"
@@ -192,7 +194,7 @@ def _r(x, nd=1):
 def build_summary(s: LiveSession) -> tuple[dict, list[dict]]:
     """Summary JSON (APP_SPEC 4.10) + metric rows (APP_SPEC 7.3)."""
     src = s.kind                                         # "real" for replay, "simulated" for mock
-    sim_ex = s.exercise in ("movement", "hr_recovery")   # no data for these -> always simulated
+    sim_ex = s.exercise == "hr_recovery"                 # no data for it -> always simulated
     ex_src = "simulated" if sim_ex else src
     P = s.phases
 
@@ -229,7 +231,6 @@ def build_summary(s: LiveSession) -> tuple[dict, list[dict]]:
     holds = [dict(t=e["t"], hold_s=e["data"]["hold_s"], by=e["data"]["by"],
                   hbo_rise_uM=e["data"]["hbo_rise_uM"], confidence=e["confidence"])
              for e in s.events if e["name"] == "hold_end_detected"]
-    moves = [e for e in s.events if e["name"] in ("command_verified", "command_failed")]
     recovery = next((e["data"] for e in s.events if e["name"] == "recovery_measured"), None)
 
     frames = sum(a.frames for a in P.values())
@@ -261,10 +262,6 @@ def build_summary(s: LiveSession) -> tuple[dict, list[dict]]:
                              ("" if pl >= 0.7 else " Spróbuj płynniej podążać za kulą.")))
     if holds:
         ins.append(dict(kind="info", text=f"Najdłuższy bezdech w tej sesji: {max(h['hold_s'] for h in holds):.0f} s."))
-    for m in moves:
-        dd = m["data"]
-        ins.append(dict(kind="positive" if m["name"] == "command_verified" else "tip",
-                        text=f"Ruch „{dd['target']}”: wykryto {dd['detected_reps']}/{dd['reps']} powtórzeń."))
     if quality["measured_s"] and quality["motion_s"] > 0.2 * quality["measured_s"]:
         ins.append(dict(kind="tip", text="Sporo ruchu w trakcie pomiaru – wyniki mogą być mniej dokładne."))
     if src == "real" and after:
@@ -276,15 +273,12 @@ def build_summary(s: LiveSession) -> tuple[dict, list[dict]]:
         before=before, after=after, delta=delta,
         exercise_stats=dict(hr_bpm=exercise_hr) if exa else None,
         scores=scores or None, holds=holds,
-        movement=[dict(target=m["data"]["target"], reps=m["data"]["reps"],
-                       detected_reps=m["data"]["detected_reps"], verified=m["name"] == "command_verified")
-                  for m in moves],
         recovery=dict(recovery, source="simulated") if recovery else None,
         crf_mets=_r(crf), quality=quality, insights=ins,
         # where "after" comes from: live / exercise_end (SPB post rest) / rest_recording (later part of the rest file)
         after_from=getattr(s.src, "post_from", "live") if after else None,
         sources=dict(hr=src, hrv=src, resp=src, resonance=ex_src, holds=ex_src,
-                     movement="simulated", recovery="simulated"),
+                     recovery="simulated"),
     )
 
     rows = []
@@ -303,9 +297,6 @@ def build_summary(s: LiveSession) -> tuple[dict, list[dict]]:
     if holds:
         add("hold_s", "exercise", max(h["hold_s"] for h in holds))
         add("hold_hbo_peak_uM", "exercise", max(h["hbo_rise_uM"] for h in holds))
-    if moves:
-        add("reps_verified", "exercise", sum(m["data"]["detected_reps"] for m in moves if m["name"] == "command_verified"),
-            source="simulated")
     if recovery:
         add("hr_recovery_drop_bpm", "after", recovery["drop_1min_bpm"], source="simulated")
     add("good_pct", "session", quality["good_pct"])

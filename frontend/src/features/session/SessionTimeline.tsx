@@ -9,12 +9,11 @@ const PHASES: Record<string, { label: string; short: string; fill: string }> = {
   resonance_breathing: { label: "Resonance breathing", short: "Exercise", fill: "rgba(139, 92, 246, 0.08)" },
   short_holds: { label: "Short holds", short: "Holds", fill: "rgba(14, 165, 233, 0.08)" },
   breath_hold: { label: "Maximal hold", short: "Hold", fill: "rgba(14, 165, 233, 0.08)" },
-  movement: { label: "Movement", short: "Move", fill: "rgba(100, 116, 139, 0.08)" },
   hr_recovery: { label: "HR recovery", short: "Recovery", fill: "rgba(244, 63, 94, 0.07)" },
 };
 
 type Track = {
-  key: "hr_bpm" | "resonance_score" | "breath_signal";
+  key: "hr_bpm" | "resonance_score" | "breath_signal" | "hbo_uM";
   label: string;
   unit: string;
   color: string;
@@ -23,19 +22,30 @@ type Track = {
   area?: boolean;
 };
 
-const TRACKS: Track[] = [
-  { key: "hr_bpm", label: "Heart rate", unit: " bpm", color: "#f43f5e", digits: 0 },
-  { key: "resonance_score", label: "Resonance 0.1 Hz", unit: "/100", color: "#8b5cf6", digits: 0, range: [0, 100], area: true },
-  { key: "breath_signal", label: "Breathing wave", unit: "", color: "#00b4d8", digits: 2 },
-];
+const ALL: Record<Track["key"], Track> = {
+  hr_bpm: { key: "hr_bpm", label: "Heart rate", unit: " bpm", color: "#f43f5e", digits: 0 },
+  resonance_score: { key: "resonance_score", label: "Resonance 0.1 Hz", unit: "/100", color: "#8b5cf6", digits: 0, range: [0, 100], area: true },
+  breath_signal: { key: "breath_signal", label: "Breathing wave", unit: "", color: "#00b4d8", digits: 2 },
+  hbo_uM: { key: "hbo_uM", label: "HbO (mean)", unit: " µM", color: "#dc2626", digits: 2 },
+};
+
+/** Tracks that tell the story of each exercise. */
+function tracksFor(exercise: string, hasHbo: boolean): Track[] {
+  const hbo = hasHbo ? [ALL.hbo_uM] : [];
+  if (exercise === "resonance_breathing") return [ALL.hr_bpm, ALL.resonance_score, ALL.breath_signal];
+  if (exercise === "short_holds" || exercise === "breath_hold") return [...hbo, ALL.hr_bpm, ALL.breath_signal];
+  return [ALL.hr_bpm, ALL.breath_signal, ...hbo];
+}
 
 const W = 1000;
 const TRACK_H = 70;
 const GAP = 14;
 const TOP = 26;
 
-export function SessionTimeline({ timeline }: { timeline: Timeline }) {
+export function SessionTimeline({ timeline, exercise }: { timeline: Timeline; exercise: string }) {
   const { series, phases, events } = timeline;
+  const TRACKS = tracksFor(exercise, !!series.hbo_uM?.some((v) => v !== null));
+  const get = (k: Track["key"]) => series[k] ?? [];
   const t = series.t;
   const t0 = t[0] ?? 0;
   const t1 = t[t.length - 1] ?? 1;
@@ -47,11 +57,11 @@ export function SessionTimeline({ timeline }: { timeline: Timeline }) {
   const paths = useMemo(
     () =>
       TRACKS.map((tr, k) => {
-        const vals = series[tr.key];
+        const vals = get(tr.key);
         const finite = vals.filter((v): v is number => v !== null && Number.isFinite(v));
         let [lo, hi] = tr.range ?? [Math.min(...finite), Math.max(...finite)];
         if (!tr.range) {
-          const pad = Math.max((hi - lo) * 0.12, tr.key === "hr_bpm" ? 2 : 0.2);
+          const pad = Math.max((hi - lo) * 0.12, tr.key === "hr_bpm" ? 2 : tr.key === "hbo_uM" ? 0.05 : 0.2);
           lo -= pad;
           hi += pad;
         }
@@ -70,7 +80,7 @@ export function SessionTimeline({ timeline }: { timeline: Timeline }) {
         const area = tr.area && d ? `${d} L${x(t1)} ${top + TRACK_H} L${x(t0)} ${top + TRACK_H}Z` : null;
         return { tr, d, area, y, top, lo, hi };
       }),
-    [series, t, t0, t1], // eslint-disable-line react-hooks/exhaustive-deps
+    [series, t, t0, t1, exercise], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const marks = events.filter((e) => ["cycle", "hold_start", "hold_end_detected"].includes(e.name));
@@ -139,8 +149,8 @@ export function SessionTimeline({ timeline }: { timeline: Timeline }) {
           <g>
             <line x1={hx} x2={hx} y1={0} y2={H} className="tl-cursor" />
             {paths.map(({ tr, y }) => {
-              const v = series[tr.key][hover];
-              return v === null || !Number.isFinite(v) ? null : (
+              const v = get(tr.key)[hover];
+              return v == null || !Number.isFinite(v) ? null : (
                 <circle key={tr.key} cx={hx} cy={y(v)} r={4} fill="white" stroke={tr.color} strokeWidth={2} />
               );
             })}
@@ -154,10 +164,10 @@ export function SessionTimeline({ timeline }: { timeline: Timeline }) {
             {hoverPhase && <span> • {PHASES[hoverPhase]?.label ?? hoverPhase}</span>}
           </strong>
           {TRACKS.map((tr) => {
-            const v = series[tr.key][hover];
+            const v = get(tr.key)[hover];
             return (
               <span key={tr.key} style={{ color: tr.color }}>
-                {tr.label}: <b>{v === null || !Number.isFinite(v) ? "—" : `${v.toFixed(tr.digits)}${tr.unit}`}</b>
+                {tr.label}: <b>{v == null || !Number.isFinite(v) ? "—" : `${v.toFixed(tr.digits)}${tr.unit}`}</b>
               </span>
             );
           })}

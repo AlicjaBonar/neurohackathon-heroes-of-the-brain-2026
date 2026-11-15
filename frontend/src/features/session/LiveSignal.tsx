@@ -50,17 +50,28 @@ function hbBestLayers(): Record<"hbo" | "hbr", Layer> {
 
 const BY_ID = Object.fromEntries(LAYERS.map((l) => [l.id, l])) as Record<LayerId, Layer>;
 
-const DEFAULT_ON: LayerId[] = ["breath", "target", "hbo", "hbr", "hr", "lock"];
-const STORAGE_KEY = "live-layers";
+/** Layers that make sense for each exercise (the pacer and phase-lock exist only in resonance breathing). */
+const AVAILABLE: Record<string, LayerId[]> = {
+  resonance_breathing: ["breath", "target", "hbo", "hbr", "hr", "motion", "lock"],
+  default: ["breath", "hbo", "hbr", "hr", "motion"],
+};
+const DEFAULT_ON: Record<string, LayerId[]> = {
+  resonance_breathing: ["breath", "target", "hbo", "hbr", "hr", "lock"],
+  short_holds: ["breath", "hbo", "hbr", "hr"],
+  breath_hold: ["breath", "hbo", "hbr", "hr"],
+  hr_recovery: ["hr", "breath", "hbo", "hbr"],
+};
+const storageKey = (exercise: string) => `live-layers:${exercise}`;
 
-function loadLayers(): Set<LayerId> {
+function loadLayers(exercise: string): Set<LayerId> {
+  const allowed = AVAILABLE[exercise] ?? AVAILABLE.default;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return new Set((JSON.parse(raw) as LayerId[]).filter((id) => id in BY_ID));
+    const raw = localStorage.getItem(storageKey(exercise));
+    if (raw) return new Set((JSON.parse(raw) as LayerId[]).filter((id) => allowed.includes(id)));
   } catch {
     /* storage unavailable */
   }
-  return new Set(DEFAULT_ON);
+  return new Set(DEFAULT_ON[exercise] ?? allowed);
 }
 
 const W = 600;
@@ -198,21 +209,25 @@ function Lane({
 
 export function LiveSignalCard({
   samples,
+  exercise,
   scoreLabel,
   score,
   stage,
   footer,
   hb,
 }: {
+  exercise: string;
   /** Latest frame's HbO/HbR block: channel count of the mean and the strongest channel. */
   hb?: FrameMsg["hb"];
   samples: SignalSample[];
-  scoreLabel: string;
-  score: number | null;
+  /** Score badge in the corner; omitted for exercises without a live score. */
+  scoreLabel?: string;
+  score?: number | null;
   stage: string;
   footer?: ReactNode;
 }) {
-  const [on, setOn] = useState<Set<LayerId>>(loadLayers);
+  const [on, setOn] = useState<Set<LayerId>>(() => loadLayers(exercise));
+  const available = AVAILABLE[exercise] ?? AVAILABLE.default;
 
   const toggle = (id: LayerId) =>
     setOn((prev) => {
@@ -220,7 +235,7 @@ export function LiveSignalCard({
       if (next.has(id)) next.delete(id);
       else next.add(id);
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify([...next]));
+        localStorage.setItem(storageKey(exercise), JSON.stringify([...next]));
       } catch {
         /* storage unavailable */
       }
@@ -264,14 +279,14 @@ export function LiveSignalCard({
         caption="LIVE SIGNALS • LAST 30 S"
         title={stage ? `Monitor • ${stage.toLowerCase()}` : "Monitor"}
         aside={
-          <div className="coherence">
+          scoreLabel && <div className="coherence">
             <small>{scoreLabel}</small>
-            <strong>{score === null ? "—" : `${score}%`}</strong>
+            <strong>{score == null ? "—" : `${score}%`}</strong>
           </div>
         }
       />
       <div className="layer-toggles" role="group" aria-label="Signal layers">
-        {LAYERS.map((l) => (
+        {LAYERS.filter((l) => available.includes(l.id)).map((l) => (
           <button
             key={l.id}
             type="button"

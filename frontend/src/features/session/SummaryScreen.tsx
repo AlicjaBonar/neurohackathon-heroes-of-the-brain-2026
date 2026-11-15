@@ -93,9 +93,6 @@ function resultTiles(s: Summary): Tile[] {
     out.push({ label: "Longest hold", value: fmt(Math.max(...s.holds.map((h) => h.hold_s))), unit: " s", note: `${s.holds.length} hold${s.holds.length > 1 ? "s" : ""}`, tone: "#0ea5e9" });
     out.push({ label: "Peak HbO rise", value: fmt(Math.max(...s.holds.map((h) => h.hbo_rise_uM)), 2), unit: " µM", note: "oxygenated blood during holds", tone: "#dc2626" });
   }
-  for (const m of s.movement) {
-    out.push({ label: `Movement: ${m.target.replace("_", " ")}`, value: `${m.detected_reps}/${m.reps}`, unit: "", note: m.verified ? "passed" : "not passed", tone: "#64748b" });
-  }
   if (s.recovery) {
     out.push({ label: "HR drop in 1 min", value: fmt(s.recovery.drop_1min_bpm), unit: " bpm", note: "simulated", tone: "#f43f5e" });
   }
@@ -222,7 +219,7 @@ export function SummaryScreen({ summary, onDone }: { summary: Summary; onDone: (
         <GlassPanel as="article" className="sum-timeline">
           <CardHeader caption="SESSION TIMELINE" title="How your body responded" aside={<span className="sum-hint">Hover to inspect</span>} />
           {timeline ? (
-            <SessionTimeline timeline={timeline} />
+            <SessionTimeline timeline={timeline} exercise={summary.exercise} />
           ) : (
             <p className="empty-note">{timelineFailed ? "Timeline is not available for this session." : "Loading timeline…"}</p>
           )}

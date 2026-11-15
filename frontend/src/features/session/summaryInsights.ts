@@ -48,12 +48,6 @@ export function buildInsights(s: Summary): Insight[] {
     const rise = Math.max(...s.holds.map((h) => h.hbo_rise_uM));
     out.push({ kind: "info", text: `Longest breath hold: ${longest.toFixed(0)} s. Oxygenated blood in the forehead rose by up to ${rise.toFixed(2)} µM during the holds.` });
   }
-  for (const m of s.movement) {
-    out.push({
-      kind: m.verified ? "positive" : "tip",
-      text: `Movement “${m.target.replace("_", " ")}”: ${m.detected_reps} of ${m.reps} repetitions detected.`,
-    });
-  }
   if (s.recovery) {
     out.push({ kind: "info", text: `Heart rate fell by ${s.recovery.drop_1min_bpm} bpm in the first minute of recovery (simulated).` });
   }

@@ -4,7 +4,6 @@ A phase is a list of segments. Segment kinds:
   free     - spontaneous breathing
   paced    - breathing with the pacer, `cycles` x 10 s (inhale 4.5 s, exhale 5.5 s)
   hold     - breath hold; dur=None means maximal (ends by detector or user button)
-  move     - commanded movement (simulated, APP_SPEC 4.9)
   recover  - heart-rate recovery after exertion (simulated)
 """
 from __future__ import annotations
@@ -21,8 +20,6 @@ class Segment:
     kind: str
     dur: float | None = None
     cycles: int = 0
-    gesture: str = "nod"
-    reps: int = 3
 
 
 def plan(phase: str, baseline_s: float = 120.0) -> list[Segment]:
@@ -36,8 +33,6 @@ def plan(phase: str, baseline_s: float = 120.0) -> list[Segment]:
         return [s for _ in range(7) for s in (Segment("free", 30), Segment("hold", 10))] + [Segment("free", 30)]
     if phase == "breath_hold":
         return [Segment("free", 30), Segment("hold", None), Segment("free", 45)]
-    if phase == "movement":
-        return [Segment("free", 5), Segment("move", 15, gesture="nod", reps=3), Segment("free", 20)]
     if phase == "hr_recovery":
         return [Segment("recover", 120)]
     raise KeyError(phase)
@@ -63,9 +58,6 @@ CATALOG = [
          description="Wstrzymaj oddech tak długo, jak to komfortowe. Koniec wykrywamy automatycznie.",
          measures=[dict(name="hold_s", label="czas bezdechu", source="real"),
                    dict(name="hold_hbo_peak_uM", label="reakcja HbO", source="real")]),
-    dict(id="movement", title="Wyzwanie ruchowe",
-         description="Wykonaj polecony ruch, a potem pozostań w bezruchu.",
-         measures=[dict(name="reps_verified", label="zaliczone powtórzenia", source="simulated")]),
     dict(id="hr_recovery", title="Powrót tętna po wysiłku",
          description="Dwie minuty spokoju po wysiłku: jak szybko tętno wraca do normy.",
          measures=[dict(name="hr_recovery_drop_bpm", label="spadek tętna w 1. minucie", source="simulated")]),

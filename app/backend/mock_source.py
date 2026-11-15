@@ -7,7 +7,7 @@ a breath hold. A replay source for SNIRF files will implement the same interface
 
     start_phase(name) -> duration_s      stop_phase()
     step(dt) -> StepOut                  vitals() -> dict      quality(setup) -> dict
-    probe() -> dict                      user_event(name)      simulate_motion(gesture, reps, correct)
+    probe() -> dict                      user_event(name)
 """
 from __future__ import annotations
 
@@ -72,7 +72,6 @@ class MockSource:
         self.hold_rise = 0.0
         self.m_ou = 0.0
         self.twitch_until = -1.0
-        self.burst_until = -1.0
         self.last_unstill = -99.0
         self.last_warn = -99.0
         # phase plan
@@ -82,7 +81,6 @@ class MockSource:
         self.seg_t = 0.0
         self.set_no = 0
         self._cycle_in_seg = -1
-        self._move: dict = {}
         self._hold_by = "detector"
         self._rec_hr0 = None
         self._pending: list[dict] = []
@@ -122,10 +120,6 @@ class MockSource:
                 self._ev("hold_start", dict(kind="max"))
             else:
                 self._ev("hold_start", dict(kind="short", target_s=s.dur))
-        elif s.kind == "move":
-            self._move = dict(exec_at=self.rng.uniform(2, 4), correct=self.rng.random() < 0.9,
-                              started=False, reported=False, end=0.0)
-            self._ev("command_issued", dict(target=s.gesture, reps=s.reps))
         elif s.kind == "recover":
             self._rec_hr0 = None
         return True
@@ -145,16 +139,6 @@ class MockSource:
             self.seg.dur = self.seg_t
             return True
         return False
-
-    def simulate_motion(self, gesture: str | None, reps: int | None, correct: bool) -> bool:
-        if not (self.seg and self.seg.kind == "move") or self._move["started"]:
-            return False
-        if gesture:
-            self._move["gesture"] = gesture
-        if reps:
-            self._move["reps"] = reps
-        self._move.update(exec_at=self.seg_t, correct=correct)
-        return True
 
     # ------------------------------------------------------------------ simulation step
     def _best_channel(self, hbo: float, hbr: float, pulse: float, dt: float) -> dict:
@@ -271,27 +255,9 @@ class MockSource:
         # --- motion
         self.m_ou = self._ou(self.m_ou, 2.0, 0.05, dt)
         level = abs(self.m_ou) + 0.04
-        if kind == "move":
-            mv = self._move
-            if not mv["started"] and self.seg_t >= mv["exec_at"]:
-                mv["started"] = True
-                reps = mv.get("reps", self.seg.reps)
-                mv["done_reps"] = reps if mv["correct"] else max(0, reps - rng.choice([1, 2]))
-                mv["end"] = self.seg_t + 0.9 * max(1, mv["done_reps"])
-                self.burst_until = self.t + (mv["end"] - self.seg_t)
-            if mv["started"] and not mv["reported"] and self.seg_t >= mv["end"]:
-                mv["reported"] = True
-                target, reps = mv.get("gesture", self.seg.gesture), mv.get("reps", self.seg.reps)
-                data = dict(target=target, reps=reps, detected_reps=mv["done_reps"])
-                if mv["correct"]:
-                    self._ev("command_verified", data, round(rng.uniform(0.8, 0.97), 2))
-                else:
-                    self._ev("command_failed", {**data, "reason": "too_few_reps"}, round(rng.uniform(0.7, 0.9), 2))
-        elif rng.random() < 0.0015 and self.t > self.twitch_until:
+        if rng.random() < 0.0015 and self.t > self.twitch_until:
             self.twitch_until = self.t + 1.2
-        if self.t < self.burst_until:
-            level += 0.75 + 0.2 * abs(math.sin(2 * math.pi * self.t / 0.9))
-        elif self.t < self.twitch_until:
+        if self.t < self.twitch_until:
             level += 0.45
         level = min(1.0, level)
         still = level < 0.3
