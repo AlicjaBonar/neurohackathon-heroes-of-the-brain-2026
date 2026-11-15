@@ -117,7 +117,7 @@ export type Summary = {
   after: Stats | null;
   delta: { hr_bpm: number | null; rmssd_pct: number | null; resp_rate_bpm: number | null } | null;
   exercise_stats: { hr_bpm: number | null } | null;
-  scores: { resonance?: number; phase_lock?: number | null; relaxation?: number } | null;
+  scores: { resonance?: number; relaxation?: number } | null;
   holds: { t: number; hold_s: number; by: string; hbo_rise_uM: number; confidence: number }[];
   recovery: { drop_1min_bpm: number; source: Source } | null;
   crf_mets: number | null;
@@ -170,7 +170,6 @@ export type VitalsMsg = {
   hrv: { rmssd_ms: number | null; sdnn_ms?: number | null; window_s: number; confidence: number; source: Source };
   resp: { rate_bpm: number | null; window_s: number; confidence: number; source: Source };
   resonance: { score: number; power_0p1_rel?: number; baseline_rel?: number; source: Source };
-  phase_lock?: { value: number; cycles: number; source: Source };
   vs_baseline?: { hr_delta_bpm?: number; rmssd_delta_pct?: number };
 };
 

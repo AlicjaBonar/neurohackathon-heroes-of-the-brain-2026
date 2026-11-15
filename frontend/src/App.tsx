@@ -39,6 +39,7 @@ export default function App() {
           setAvatar(avatarFromUser(u));
           goToHub();
         }}
+        onBack={user ? goToHub : undefined}
       />
     );
   }

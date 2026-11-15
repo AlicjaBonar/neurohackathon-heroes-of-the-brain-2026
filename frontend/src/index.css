@@ -86,21 +86,12 @@ header {
   object-fit: contain;
   flex: 0 0 auto;
 }
-.status-pill {
+/* Right side of the header: optional content, then the back button (same place on every screen). */
+.header-right {
   display: flex;
   align-items: center;
-  gap: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  background: rgba(255, 255, 255, 0.58);
-  backdrop-filter: blur(16px);
-  padding: 9px 14px;
-  border-radius: 30px;
-  font-size: 10px;
-  font-weight: 700;
-  color: #4f7780;
-  box-shadow: 0 8px 25px rgba(25, 92, 97, 0.06);
+  gap: 18px;
 }
-.status-pill i,
 .live-title i {
   width: 7px;
   height: 7px;
@@ -108,11 +99,6 @@ header {
   background: #10b981;
   box-shadow: 0 0 0 4px #10b9811f;
   animation: pulse 2s infinite;
-}
-.status-pill b {
-  color: #0f4c5c;
-  border-left: 1px solid #cbdedf;
-  padding-left: 8px;
 }
 .screen-title {
   max-width: 1300px;
@@ -862,19 +848,6 @@ h1 {
   color: #0d9488;
 }
 
-.back-row {
-  max-width: 1300px;
-  margin: 22px auto -18px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-  z-index: 4;
-}
-.back-row .btn-ghost {
-  font-size: 10px;
-}
-.back-row > span,
 .date-range {
   font-size: 8px;
   letter-spacing: 1.3px;
@@ -1300,25 +1273,6 @@ h1 {
 .live-chart-card {
   padding: 23px;
   min-height: 370px;
-}
-.coherence {
-  background: #ddf8ee;
-  padding: 8px 13px;
-  border-radius: 11px;
-  text-align: center;
-}
-.coherence small,
-.coherence strong {
-  display: block;
-}
-.coherence small {
-  font-size: 6px;
-  letter-spacing: 1px;
-  color: #4d8e7a;
-}
-.coherence strong {
-  font-size: 17px;
-  color: #0b9a70;
 }
 .legend {
   display: flex;
@@ -1774,18 +1728,6 @@ h1 {
 
 
 
-.avatar-session-controls {
-  position: absolute;
-  z-index: 8;
-  right: 0;
-  bottom: 24px;
-  left: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-}
-
 .pause-button {
   width: 70px;
   height: 70px;
@@ -1860,9 +1802,6 @@ h1 {
   .app-shell,
   .session-shell {
     padding: 18px 14px 30px;
-  }
-  .status-pill b {
-    display: none;
   }
   .screen-title {
     margin-top: 24px;
@@ -2406,29 +2345,6 @@ h1 {
   color: #b45309;
   background: #fef3c7;
 }
-.vital-confidence {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-}
-.vital-confidence i {
-  flex: 1;
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(15, 76, 92, 0.1);
-  overflow: hidden;
-}
-.vital-confidence b {
-  display: block;
-  height: 100%;
-  background: var(--tone);
-}
-.vital-confidence span {
-  font-size: 9px;
-  color: #81999d;
-  white-space: nowrap;
-}
 @media (max-width: 950px) {
   .vitals-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2971,101 +2887,7 @@ h1 {
 .sum-verdict.mid { color: #0e7490; }
 .sum-verdict.low { color: #b45309; }
 
-/* ---- exercise-specific widgets (left panel) ---- */
-.breathing-panel {
-  padding-bottom: 88px;
-}
-.ex-widget {
-  position: relative;
-  z-index: 6;
-  margin: 18px 22px 0;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(15, 76, 92, 0.08);
-}
-.ex-note {
-  margin: 8px 0 0;
-  font-size: 11px;
-  color: #6b8a90;
-}
-.sets-row {
-  display: flex;
-  gap: 18px;
-  margin-top: 10px;
-}
-.set {
-  flex: 1;
-}
-.set small {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  color: #5b7d84;
-  margin-bottom: 6px;
-}
-.set div {
-  display: flex;
-  gap: 6px;
-}
-.set i {
-  flex: 1;
-  height: 10px;
-  border-radius: 5px;
-  background: rgba(139, 92, 246, 0.14);
-  transition: background 0.4s;
-}
-.set i.done {
-  background: #8b5cf6;
-}
-.set i.next {
-  background: rgba(139, 92, 246, 0.4);
-  animation: pulse-next 1.2s ease-in-out infinite;
-}
-@keyframes pulse-next {
-  50% { opacity: 0.4; }
-}
-.hold-bars {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  height: 120px;
-  margin-top: 10px;
-}
-.hold-bar {
-  flex: 1;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 3px;
-}
-.hold-bar i {
-  width: 100%;
-  max-width: 34px;
-  border-radius: 6px 6px 2px 2px;
-  background: linear-gradient(180deg, #f97316, #dc2626);
-  transition: height 0.4s ease;
-}
-.hold-bar.active i {
-  background: linear-gradient(180deg, #fbbf24, #f97316);
-  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.25);
-}
-.hold-bar.empty i {
-  background: rgba(15, 76, 92, 0.08);
-}
-.hold-bar b {
-  font-size: 10px;
-  color: #b91c1c;
-  font-variant-numeric: tabular-nums;
-  min-height: 13px;
-}
-.hold-bar small {
-  font-size: 10px;
-  color: #6b8a90;
-  font-variant-numeric: tabular-nums;
-}
+/* ---- breath-hold counter over the avatar ---- */
 .hold-counter {
   width: 250px;
   height: 330px;
@@ -3105,16 +2927,6 @@ h1 {
   border-color: #f59e0b;
   box-shadow: 0 18px 50px rgba(245, 158, 11, 0.3);
 }
-.recovery-svg {
-  display: block;
-  width: 100%;
-  height: 110px;
-  margin-top: 8px;
-}
-.rec-line { fill: none; stroke: #f43f5e; stroke-width: 2.5; stroke-linejoin: round; }
-.rec-mark { stroke: rgba(15, 76, 92, 0.35); stroke-dasharray: 3 4; }
-.rec-peak { stroke: rgba(244, 63, 94, 0.3); stroke-dasharray: 2 4; }
-.rec-label { font-size: 10px; font-weight: 700; fill: #5b7d84; }
 
 /* signal check */
 .signal-check {
@@ -3169,8 +2981,8 @@ h1 {
   font-size: 9px;
   font-weight: 700;
 }
-.activity-choices .data-badge.real { background: #d1fae5; color: #047857; }
-.activity-choices .data-badge.sim { background: #fef3c7; color: #b45309; }
+.activity-choices .data-badge.real { color: #047857; }
+.activity-choices .data-badge.sim { color: #b45309; }
 
 /* ---- vital parameters (stats) ---- */
 .stats-page {
@@ -3369,7 +3181,6 @@ h1 {
 .stats-page .empty-note {
   font-size: 14px;
 }
-.back-row > span,
 .date-range {
   font-size: 12px;
 }

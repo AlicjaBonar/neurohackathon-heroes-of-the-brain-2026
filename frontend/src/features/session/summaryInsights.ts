@@ -1,9 +1,6 @@
 import type { Insight, Summary } from "@/api/types";
 
-/**
- * English insights for the summary screen, built from the numbers (the backend's own
- * insight texts are Polish and used elsewhere in the app).
- */
+/** Insights for the summary screen, built from the numbers in the summary. */
 export function buildInsights(s: Summary): Insight[] {
   const out: Insight[] = [];
   const d = s.delta;
@@ -26,14 +23,6 @@ export function buildInsights(s: Summary): Insight[] {
     }
   }
 
-  const pl = s.scores?.phase_lock;
-  if (pl != null) {
-    out.push(
-      pl >= 0.7
-        ? { kind: "positive", text: `You followed the 6 breaths/min rhythm closely (${Math.round(pl * 100)}% rhythm match).` }
-        : { kind: "tip", text: `Rhythm match was ${Math.round(pl * 100)}%. Follow the pacer smoothly: inhale for 4.5 s, exhale for 5.5 s.` },
-    );
-  }
   const res = s.scores?.resonance;
   if (res != null) {
     out.push(

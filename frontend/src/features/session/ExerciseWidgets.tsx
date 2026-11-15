@@ -1,7 +1,6 @@
 import type { ChannelQuality, ChannelStatus, Probe, QualityMsg } from "@/api/types";
 import { Button } from "@/components/ui/Button";
 import { cx } from "@/lib/utils";
-import type { HoldRecord } from "./useLiveSession";
 import { WARNING_TEXT } from "./labels";
 
 // ------------------------------------------------------------------ signal check
@@ -79,56 +78,7 @@ export function SignalCheck({
   );
 }
 
-// ------------------------------------------------------------------ resonance breathing
-
-/** 3 sets × 5 paced breaths, filled as the cycle events arrive. */
-export function SetsProgress({ cycles }: { cycles: number }) {
-  return (
-    <div className="ex-widget">
-      <span className="sum-caption">PACED SETS</span>
-      <div className="sets-row">
-        {[0, 1, 2].map((set) => (
-          <div key={set} className="set">
-            <small>Set {set + 1}</small>
-            <div>
-              {[0, 1, 2, 3, 4].map((i) => {
-                const n = set * 5 + i + 1;
-                return <i key={i} className={cx(n <= cycles && "done", n === cycles + 1 && "next")} />;
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ------------------------------------------------------------------ breath holds
-
-/** One bar per hold: HbO rise (live while holding), with the hold duration below. */
-export function HoldBars({ holds, total }: { holds: HoldRecord[]; total: number }) {
-  const slots = Math.max(total, holds.length);
-  const max = Math.max(0.2, ...holds.map((h) => h.rise ?? 0));
-  return (
-    <div className="ex-widget">
-      <span className="sum-caption">HbO RESPONSE PER HOLD</span>
-      <div className="hold-bars">
-        {Array.from({ length: slots }, (_, i) => {
-          const h = holds[i];
-          const rise = Math.max(0, h?.rise ?? 0);
-          return (
-            <div key={i} className={cx("hold-bar", h && h.endT === null && "active", !h && "empty")}>
-              <b>{h?.rise != null ? `+${rise.toFixed(2)}` : ""}</b>
-              <i style={{ height: `${h ? Math.max(4, (rise / max) * 100) : 4}%` }} />
-              <small>{h ? (h.holdS != null ? `${h.holdS.toFixed(0)} s` : "…") : i + 1}</small>
-            </div>
-          );
-        })}
-      </div>
-      <p className="ex-note">µM of oxygenated blood in the forehead – it rises as CO₂ builds up during the hold.</p>
-    </div>
-  );
-}
 
 /** Count-up over the avatar during a maximal hold, then the result. */
 export function HoldCounter({ seconds, best, done }: { seconds: number; best: number | null; done: boolean }) {
@@ -146,35 +96,8 @@ export function HoldCounter({ seconds, best, done }: { seconds: number; best: nu
             ? record
               ? "new personal best – keep going"
               : `seconds • your best ${best.toFixed(0)} s`
-            : "seconds – press I'm done when you breathe"}
+            : "seconds – the end is detected automatically"}
       </span>
-    </div>
-  );
-}
-
-// ------------------------------------------------------------------ HR recovery
-
-/** Heart rate since the recovery started, with the 60 s mark. */
-export function RecoveryCurve({ points, peak }: { points: { t: number; bpm: number }[]; peak: number | null }) {
-  const W = 300;
-  const H = 110;
-  const T = 120;
-  const vals = points.map((p) => p.bpm);
-  const lo = Math.min(...vals, peak ?? 60) - 4;
-  const hi = Math.max(...vals, peak ?? 100) + 4;
-  const x = (t: number) => (t / T) * W;
-  const y = (v: number) => 8 + (1 - (v - lo) / (hi - lo || 1)) * (H - 16);
-  const d = points.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)} ${y(p.bpm).toFixed(1)}`).join(" ");
-  return (
-    <div className="ex-widget">
-      <span className="sum-caption">HEART RATE RECOVERY</span>
-      <svg viewBox={`0 0 ${W} ${H}`} className="recovery-svg" role="img" aria-label="Heart rate during recovery">
-        <line x1={x(60)} x2={x(60)} y1={0} y2={H} className="rec-mark" />
-        <text x={x(60) + 4} y={12} className="rec-label">60 s</text>
-        {peak !== null && <line x1={0} x2={W} y1={y(peak)} y2={y(peak)} className="rec-peak" />}
-        {d && <path d={d} className="rec-line" />}
-      </svg>
-      <p className="ex-note">A drop of 12 bpm or more in the first minute is a sign of good fitness (simulated).</p>
     </div>
   );
 }

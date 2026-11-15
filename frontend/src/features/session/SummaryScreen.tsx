@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api/backend";
 import type { Insight, Summary, Timeline } from "@/api/types";
-import { AppShell, StatusPill } from "@/components/layout/AppShell";
-import { Button } from "@/components/ui/Button";
+import { AppShell } from "@/components/layout/AppShell";
 import { CardHeader, GlassPanel } from "@/components/ui/Card";
 import { ScreenTitle } from "@/components/ui/Page";
 import { cx, formatDuration } from "@/lib/utils";
@@ -26,10 +25,6 @@ function mainScore(s: Summary): Score | null {
       verdict: relaxationVerdict(sc.relaxation),
       note: "From the change in heart rate and HRV between the rest before and after, plus resonance.",
     };
-  }
-  if (sc?.phase_lock != null) {
-    const v = Math.round(sc.phase_lock * 100);
-    return { value: v, label: "Rhythm match", verdict: v >= 70 ? "In sync" : "Keep practising", note: "How closely your breathing followed the 6/min pacer." };
   }
   if (sc?.resonance != null) {
     return { value: sc.resonance, label: "Resonance", verdict: sc.resonance >= 50 ? "Strong" : "Building up", note: "Rise of the 0.1 Hz wave compared with rest." };
@@ -72,9 +67,6 @@ type Tile = { label: string; value: string; unit: string; note?: string; tone: s
 function resultTiles(s: Summary): Tile[] {
   const out: Tile[] = [];
   const sc = s.scores;
-  if (sc?.phase_lock != null) {
-    out.push({ label: "Rhythm match", value: fmt(sc.phase_lock * 100), unit: "%", note: "breathing vs. 6/min pacer", tone: "#0b9a70" });
-  }
   if (sc?.resonance != null) {
     out.push({ label: "Resonance 0.1 Hz", value: fmt(sc.resonance), unit: "/100", note: "upper half of the exercise", tone: "#8b5cf6" });
   }
@@ -168,7 +160,7 @@ export function SummaryScreen({ summary, onDone }: { summary: Summary; onDone: (
   const when = new Date().toLocaleString("en-GB", { weekday: "long", hour: "2-digit", minute: "2-digit" });
 
   return (
-    <AppShell headerContent={<StatusPill />}>
+    <AppShell onBack={onDone} backLabel="Back to hub">
       <ScreenTitle
         eyebrow={`SESSION COMPLETE • ${formatDuration(Math.round(summary.duration_s))}`}
         title={EXERCISE_TITLES[summary.exercise] ?? summary.exercise}
@@ -177,7 +169,6 @@ export function SummaryScreen({ summary, onDone }: { summary: Summary; onDone: (
             {when} • <span className={cx("source-badge", real ? "real" : "sim")}>{real ? "Recorded fNIRS data" : "Simulated signal"}</span>
           </>
         }
-        aside={<Button onClick={onDone}>Back to hub</Button>}
       />
 
       <section className="sum-grid">

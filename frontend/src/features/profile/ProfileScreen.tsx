@@ -23,15 +23,18 @@ export function ProfileScreen({
   avatar,
   onAvatarChange,
   onDone,
+  onBack,
 }: {
   /** Current user when editing an existing profile; the form starts pre-filled. */
   user?: User | null;
   avatar: AvatarConfig;
   onAvatarChange: (avatar: AvatarConfig) => void;
   onDone: (user: User) => void;
+  /** Back to the hub without saving (only when a profile already exists). */
+  onBack?: () => void;
 }) {
   return (
-    <AppShell>
+    <AppShell onBack={onBack}>
       <ScreenTitle
         eyebrow="STEP 1 OF 2"
         title="Profile and calibration"

@@ -1,5 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { getJson } from "@/api/rest";
+import type { ReactNode } from "react";
+import { BackButton } from "@/components/ui/Button";
 
 export function Brand({ tagline = "KEEP CALM AND CHECK YOUR BREATH" }: { tagline?: string }) {
   return (
@@ -13,47 +13,36 @@ export function Brand({ tagline = "KEEP CALM AND CHECK YOUR BREATH" }: { tagline
   );
 }
 
-type Health = { status: string; version: string; demo_data: boolean };
-
-/** Backend connection indicator (GET /api/health). */
-export function StatusPill() {
-  const [health, setHealth] = useState<Health | "offline" | null>(null);
-  useEffect(() => {
-    const controller = new AbortController();
-    getJson<Health>("health", controller.signal)
-      .then(setHealth)
-      .catch(() => !controller.signal.aborted && setHealth("offline"));
-    return () => controller.abort();
-  }, []);
-  return (
-    <div className="status-pill">
-      <i />{" "}
-      {health === "offline" ? "Backend offline" : health ? "Backend connected" : "Connecting…"}
-      {health && health !== "offline" && <b>v{health.version}</b>}
-    </div>
-  );
-}
-
 /**
- * Page frame shared by every screen: background, header with the brand on the left
- * and `headerContent` on the right (defaults to the sensor status pill).
+ * Page frame shared by every screen: background, header with the brand on the left and
+ * `headerContent` plus the back button on the right. The back button always sits in the same
+ * place (last item of the header) on every screen that has one.
  */
 export function AppShell({
   variant = "default",
-  headerContent = <StatusPill />,
+  headerContent,
+  onBack,
+  backLabel = "Back",
   tagline,
   children,
 }: {
   variant?: "default" | "session";
   tagline?: string;
   headerContent?: ReactNode;
+  onBack?: () => void;
+  backLabel?: string;
   children: ReactNode;
 }) {
   return (
     <main className={variant === "session" ? "session-shell" : "app-shell"}>
       <header>
         <Brand tagline={tagline} />
-        {headerContent}
+        {(headerContent || onBack) && (
+          <div className="header-right">
+            {headerContent}
+            {onBack && <BackButton onClick={onBack} label={backLabel} />}
+          </div>
+        )}
       </header>
       {children}
     </main>

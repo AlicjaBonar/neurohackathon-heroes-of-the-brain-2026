@@ -35,8 +35,6 @@ export const api = {
   probe: (id: string) => getJson<Probe>(`sessions/${id}/probe`),
   timeline: (id: string) => getJson<Timeline>(`sessions/${id}/timeline`),
   summary: (id: string) => getJson<Summary>(`sessions/${id}/summary`),
-  holdEnd: (id: string) =>
-    requestJson<{ accepted: boolean }>(`sessions/${id}/events`, json("POST", { name: "hold_end_button" })),
 };
 
 /** Backend errors are `{"error": {"code", "message"}}` (docs 8.3); returns the message if present. */

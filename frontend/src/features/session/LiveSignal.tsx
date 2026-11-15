@@ -5,7 +5,7 @@ import type { FrameMsg } from "@/api/types";
 import { BUFFER, type SignalSample } from "./useLiveSession";
 
 /** One toggleable signal layer of the live monitor. */
-type LayerId = "breath" | "target" | "hbo" | "hbr" | "hr" | "motion" | "lock";
+type LayerId = "breath" | "target" | "hbo" | "hbr" | "hr" | "motion";
 
 type Layer = {
   id: LayerId;
@@ -28,7 +28,6 @@ const LAYERS: Layer[] = [
   { id: "hbr", label: "HbR", color: "#6366f1", unit: " µM", get: (s) => s.hbr, trend: (s) => s.hbrTrend, format: (v) => v.toFixed(2), minSpan: 0.1 },
   { id: "hr", label: "Instant heart rate", color: "#db2777", unit: " bpm", get: (s) => s.hr, format: (v) => v.toFixed(0), minSpan: 8 },
   { id: "motion", label: "Motion", color: "#64748b", unit: "%", get: (s) => s.motion, format: (v) => (v * 100).toFixed(0), range: [0, 1] },
-  { id: "lock", label: "Phase-lock", color: "#10b981", unit: "%", get: (s) => s.lock, format: (v) => (v * 100).toFixed(0), range: [0, 1] },
 ];
 /**
  * HbO/HbR lanes, one line per chromophore:
@@ -50,13 +49,13 @@ function hbBestLayers(): Record<"hbo" | "hbr", Layer> {
 
 const BY_ID = Object.fromEntries(LAYERS.map((l) => [l.id, l])) as Record<LayerId, Layer>;
 
-/** Layers that make sense for each exercise (the pacer and phase-lock exist only in resonance breathing). */
+/** Layers that make sense for each exercise (the pacer exists only in resonance breathing). */
 const AVAILABLE: Record<string, LayerId[]> = {
-  resonance_breathing: ["breath", "target", "hbo", "hbr", "hr", "motion", "lock"],
+  resonance_breathing: ["breath", "target", "hbo", "hbr", "hr", "motion"],
   default: ["breath", "hbo", "hbr", "hr", "motion"],
 };
 const DEFAULT_ON: Record<string, LayerId[]> = {
-  resonance_breathing: ["breath", "target", "hbo", "hbr", "hr", "lock"],
+  resonance_breathing: ["breath", "target", "hbo", "hbr", "hr"],
   short_holds: ["breath", "hbo", "hbr", "hr"],
   breath_hold: ["breath", "hbo", "hbr", "hr"],
   hr_recovery: ["hr", "breath", "hbo", "hbr"],
@@ -210,8 +209,6 @@ function Lane({
 export function LiveSignalCard({
   samples,
   exercise,
-  scoreLabel,
-  score,
   stage,
   footer,
   hb,
@@ -220,9 +217,6 @@ export function LiveSignalCard({
   /** Latest frame's HbO/HbR block: channel count of the mean and the strongest channel. */
   hb?: FrameMsg["hb"];
   samples: SignalSample[];
-  /** Score badge in the corner; omitted for exercises without a live score. */
-  scoreLabel?: string;
-  score?: number | null;
   stage: string;
   footer?: ReactNode;
 }) {
@@ -271,19 +265,13 @@ export function LiveSignalCard({
       });
     }
   }
-  for (const id of ["hr", "motion", "lock"] as const) if (on.has(id)) lanes.push({ key: id, series: [BY_ID[id]] });
+  for (const id of ["hr", "motion"] as const) if (on.has(id)) lanes.push({ key: id, series: [BY_ID[id]] });
 
   return (
     <GlassPanel as="article" className="live-chart-card">
       <CardHeader
         caption="LIVE SIGNALS • LAST 30 S"
         title={stage ? `Monitor • ${stage.toLowerCase()}` : "Monitor"}
-        aside={
-          scoreLabel && <div className="coherence">
-            <small>{scoreLabel}</small>
-            <strong>{score == null ? "—" : `${score}%`}</strong>
-          </div>
-        }
       />
       <div className="layer-toggles" role="group" aria-label="Signal layers">
         {LAYERS.filter((l) => available.includes(l.id)).map((l) => (

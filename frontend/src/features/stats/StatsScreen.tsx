@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { api } from "@/api/backend";
 import type { Dashboard, Fitness, History, Summary } from "@/api/types";
 import { AppShell } from "@/components/layout/AppShell";
-import { BackButton } from "@/components/ui/Button";
 import { GlassPanel } from "@/components/ui/Card";
 import { ScreenTitle } from "@/components/ui/Page";
 import { cx } from "@/lib/utils";
@@ -64,11 +63,7 @@ export function StatsScreen({ userId, onBack }: { userId: string; onBack: () => 
   const loading = !failed && (!dashboard || !history);
 
   return (
-    <AppShell>
-      <div className="back-row">
-        <BackButton onClick={onBack} />
-        <span>VITALS</span>
-      </div>
+    <AppShell onBack={onBack}>
       <ScreenTitle
         className="stats-title"
         eyebrow="YOUR PROGRESS"

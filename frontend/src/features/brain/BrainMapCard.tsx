@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/api/backend";
 import type { ChannelQuality, ChannelsMsg, Probe } from "@/api/types";
 import { CardHeader, GlassPanel } from "@/components/ui/Card";
@@ -7,68 +7,25 @@ import { BrainScene, type HoverInfo } from "./brainScene";
 import { LEGEND_GRADIENT } from "./colormap";
 import { TopoMap } from "./TopoMap";
 
-type Mode = "hbo" | "hbr" | "coupling";
+type Mode = "hbo" | "hbr";
 
 const MODES: { id: Mode; label: string; hint: string }[] = [
   { id: "hbo", label: "HbO", hint: "Oxygenated haemoglobin change" },
   { id: "hbr", label: "HbR", hint: "Deoxygenated haemoglobin change (same µM scale as HbO)" },
-  { id: "coupling", label: "Breath coupling", hint: "Correlation of HbO with your breathing, last 30 s" },
 ];
-
-/** 2 Hz channel messages kept for the breath-coupling map (30 s). */
-const HISTORY = 60;
-/** Lags tried between breathing and HbO (0–3 s at 2 Hz); HbO follows the breath with a delay. */
-const MAX_LAG = 6;
-
-function pearson(a: number[], b: number[]) {
-  const n = a.length;
-  if (n < 8) return null;
-  let ma = 0, mb = 0;
-  for (let i = 0; i < n; i++) { ma += a[i]; mb += b[i]; }
-  ma /= n; mb /= n;
-  let sab = 0, saa = 0, sbb = 0;
-  for (let i = 0; i < n; i++) {
-    const x = a[i] - ma, y = b[i] - mb;
-    sab += x * y; saa += x * x; sbb += y * y;
-  }
-  return saa > 0 && sbb > 0 ? sab / Math.sqrt(saa * sbb) : null;
-}
-
-/** Per channel: correlation of HbO with breathing at the lag where it is strongest. */
-function coupling(history: { hbo: (number | null)[]; breath: number }[], nCh: number) {
-  const out: (number | null)[] = [];
-  for (let c = 0; c < nCh; c++) {
-    let best: number | null = null;
-    for (let lag = 0; lag <= MAX_LAG; lag++) {
-      const a: number[] = [], b: number[] = [];
-      for (let i = lag; i < history.length; i++) {
-        const v = history[i].hbo[c];
-        if (v === null || v === undefined) continue;
-        a.push(v);
-        b.push(history[i - lag].breath);
-      }
-      const r = pearson(a, b);
-      if (r !== null && (best === null || Math.abs(r) > Math.abs(best))) best = r;
-    }
-    out.push(best);
-  }
-  return out;
-}
 
 const fmt = (v: number | null | undefined, unit: string, digits = 2) =>
   v === null || v === undefined ? "—" : `${v > 0 ? "+" : ""}${v.toFixed(digits)}${unit}`;
 
-export function BrainMapCard({
+/** Memoised: its props change at 2 Hz (channels), not with every 10 Hz frame of the session. */
+export const BrainMapCard = memo(function BrainMapCard({
   sessionId,
   channels,
   qualityChannels,
-  breath,
 }: {
   sessionId: string | null;
   channels: ChannelsMsg | null;
   qualityChannels: ChannelQuality[] | undefined;
-  /** Latest breathing-wave value (for the coupling map). */
-  breath: number | null;
 }) {
   const [probe, setProbe] = useState<Probe | null>(null);
   const [mode, setMode] = useState<Mode>("hbo");
@@ -77,10 +34,7 @@ export function BrainMapCard({
   const [now, setNow] = useState(() => performance.now());
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<BrainScene | null>(null);
-  const history = useRef<{ hbo: (number | null)[]; breath: number }[]>([]);
   const lastMsgAt = useRef(0);
-  const breathRef = useRef(breath);
-  breathRef.current = breath;
 
   useEffect(() => {
     if (!sessionId) return;
@@ -111,13 +65,8 @@ export function BrainMapCard({
     sceneRef.current?.setHeadVisible(showHead);
   }, [showHead]);
 
-  // Collect history for the coupling map.
   useEffect(() => {
-    if (!channels) return;
-    lastMsgAt.current = performance.now();
-    if (breathRef.current !== null) {
-      history.current = [...history.current, { hbo: channels.hbo, breath: breathRef.current }].slice(-HISTORY);
-    }
+    if (channels) lastMsgAt.current = performance.now();
   }, [channels]);
 
   // Detect pauses in the channel stream (simulated phases of a replay have no map).
@@ -129,7 +78,6 @@ export function BrainMapCard({
 
   const { values, scale, unit } = useMemo(() => {
     if (!channels) return { values: [] as (number | null)[], scale: 1, unit: " µM" };
-    if (mode === "coupling") return { values: coupling(history.current, channels.hbo.length), scale: 1, unit: "" };
     return { values: mode === "hbo" ? channels.hbo : channels.hbr, scale: channels.scale_uM, unit: " µM" };
   }, [channels, mode]);
 
@@ -149,8 +97,6 @@ export function BrainMapCard({
   const down = peak(-1);
   const hovered = hover && probe ? probe.pairs[hover.index] : null;
   const hq = hovered ? sci.get(hovered.pair) : undefined;
-  const isCoupling = mode === "coupling";
-  const couplingReady = history.current.length >= 12;
 
   return (
     <GlassPanel as="article" className="brain-card">
@@ -191,7 +137,7 @@ export function BrainMapCard({
             </div>
           )}
           {hover?.view === "3d" && hovered && (
-            <ChannelTooltip x={hover.x} y={hover.y} pair={hovered} q={hq} channels={channels} mode={mode} value={values[hovered.index]} />
+            <ChannelTooltip x={hover.x} y={hover.y} pair={hovered} q={hq} channels={channels} />
           )}
         </div>
         <div className="brain-side">
@@ -200,24 +146,20 @@ export function BrainMapCard({
               <TopoMap probe={probe} values={values} scale={scale} onHover={(h) => setHover(h && { ...h, view: "2d" })} />
             )}
             {hover?.view === "2d" && hovered && (
-              <ChannelTooltip x={hover.x} y={hover.y} pair={hovered} q={hq} channels={channels} mode={mode} value={values[hovered.index]} />
+              <ChannelTooltip x={hover.x} y={hover.y} pair={hovered} q={hq} channels={channels} />
             )}
           </div>
           <div className="brain-legend">
             <div className="legend-bar" style={{ background: LEGEND_GRADIENT }} />
             <div className="legend-ticks">
-              <span>{isCoupling ? "−1" : `−${scale.toFixed(2)} µM`}</span>
-              <span>{isCoupling ? "r = 0" : "0"}</span>
-              <span>{isCoupling ? "+1" : `+${scale.toFixed(2)} µM`}</span>
+              <span>{`−${scale.toFixed(2)} µM`}</span>
+              <span>0</span>
+              <span>{`+${scale.toFixed(2)} µM`}</span>
             </div>
             <p>
-              {isCoupling
-                ? couplingReady
-                  ? "Red: HbO rises with each breath. Blue: it moves against it."
-                  : "Collecting 6 s of data…"
-                : mode === "hbo"
-                  ? "Red: more oxygenated blood than average. Blue: less."
-                  : "HbR usually mirrors HbO with a smaller, opposite swing."}
+              {mode === "hbo"
+                ? "Red: more oxygenated blood than average. Blue: less."
+                : "HbR usually mirrors HbO with a smaller, opposite swing."}
             </p>
           </div>
           <dl className="brain-stats">
@@ -244,7 +186,7 @@ export function BrainMapCard({
       </div>
     </GlassPanel>
   );
-}
+});
 
 function ChannelTooltip({
   x,
@@ -252,16 +194,12 @@ function ChannelTooltip({
   pair,
   q,
   channels,
-  mode,
-  value,
 }: {
   x: number;
   y: number;
   pair: Probe["pairs"][number];
   q: ChannelQuality | undefined;
   channels: ChannelsMsg | null;
-  mode: Mode;
-  value: number | null | undefined;
 }) {
   return (
     <div className="channel-tooltip" style={{ left: x + 14, top: y + 14 }} role="tooltip">
@@ -273,12 +211,6 @@ function ChannelTooltip({
         <dd>{fmt(channels?.hbo[pair.index], " µM")}</dd>
         <dt>HbR</dt>
         <dd>{fmt(channels?.hbr[pair.index], " µM")}</dd>
-        {mode === "coupling" && (
-          <>
-            <dt>Breath r</dt>
-            <dd>{fmt(value, "")}</dd>
-          </>
-        )}
         <dt>Distance</dt>
         <dd>{pair.distance_mm.toFixed(1)} mm</dd>
         <dt>SCI</dt>

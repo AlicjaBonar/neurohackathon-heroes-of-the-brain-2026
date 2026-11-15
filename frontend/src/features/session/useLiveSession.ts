@@ -36,8 +36,6 @@ export type SignalSample = {
   hr: number | null;
   /** Movement level 0..1 (accelerometer). */
   motion: number;
-  /** Latest phase-lock 0..1 (vitals, 1 Hz; held between updates). */
-  lock: number | null;
   /** First sample of a new phase: a replay switches to another recording here, so lines break. */
   gap?: boolean;
 };
@@ -141,7 +139,6 @@ export function useLiveSession({
   const startedRef = useRef(false);
   const samplesRef = useRef<SignalSample[]>([]);
   const finishingRef = useRef(false);
-  const lockRef = useRef<number | null>(null);
 
   const finish = useCallback(async () => {
     const sid = sessionIdRef.current;
@@ -175,7 +172,6 @@ export function useLiveSession({
       }
     };
     samplesRef.current = [];
-    lockRef.current = null;
     setState(INITIAL);
 
     const handle = (msg: ServerMsg) => {
@@ -203,7 +199,6 @@ export function useLiveSession({
               : null,
             hr: msg.hr_instant ?? null,
             motion: msg.motion.level,
-            lock: lockRef.current,
           };
           samplesRef.current = [...samplesRef.current, sample].slice(-BUFFER);
           // A paced set has just ended -> start the rest countdown (not after the last set).
@@ -237,7 +232,6 @@ export function useLiveSession({
           break;
         }
         case "vitals":
-          lockRef.current = msg.phase_lock?.value ?? null;
           setState((s) => {
             const bpm = msg.hr.bpm;
             const peak = bpm && !msg.hr.frozen && (!s.hrPeak || bpm > s.hrPeak.bpm) ? { bpm, t: msg.t } : s.hrPeak;
@@ -299,7 +293,6 @@ export function useLiveSession({
             if (buf.length) samplesRef.current = [...buf.slice(0, -1), { ...buf[buf.length - 1], gap: true }];
             phaseName = msg.phase;
             pacedNow = false;
-            lockRef.current = null;
             setsDone = 0;
             setState((s) => ({
               ...s,
@@ -366,13 +359,8 @@ export function useLiveSession({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const endHold = useCallback(() => {
-    const sid = sessionIdRef.current;
-    if (sid) void api.holdEnd(sid).catch(() => undefined);
-  }, []);
-
   /** Skip the rest of the signal check and start the protocol now. */
   const start = useCallback(() => startRef.current(), []);
 
-  return { state, finish, endHold, start };
+  return { state, start };
 }

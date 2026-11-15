@@ -1,14 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/api/backend";
 import type { Exercise, Probe, SourceIn, Summary } from "@/api/types";
 import { AppShell } from "@/components/layout/AppShell";
-import { BackButton, Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { GlassPanel, ProgressBar } from "@/components/ui/Card";
 import { Avatar } from "@/features/avatar/Avatar";
 import type { AvatarConfig } from "@/features/avatar/avatarConfig";
 import { BrainMapCard } from "@/features/brain/BrainMapCard";
 import { cx, formatDuration } from "@/lib/utils";
-import { HoldBars, HoldCounter, RecoveryCurve, SetsProgress, SignalCheck } from "./ExerciseWidgets";
+import { HoldCounter, SignalCheck } from "./ExerciseWidgets";
 import { describeEvent, EXERCISE_TITLES, SESSION_PHASE_LABELS, STAGE_LABELS, WARNING_TEXT } from "./labels";
 import { LiveSignalCard } from "./LiveSignal";
 import { useLiveSession, type LiveState } from "./useLiveSession";
@@ -65,18 +65,10 @@ function BreathingPanel({
   state,
   avatar,
   bestHoldS,
-  recovery,
-  canEndHold,
-  onEndHold,
-  onEnd,
 }: {
   state: LiveState;
   avatar: AvatarConfig;
   bestHoldS: number | null;
-  recovery: { t: number; bpm: number }[];
-  canEndHold: boolean;
-  onEndHold: () => void;
-  onEnd: () => void;
 }) {
   const { frame, phase, phaseStartT, phaseDuration, rest, lead, hold, holds } = state;
   const now = frame?.t ?? 0;
@@ -109,12 +101,6 @@ function BreathingPanel({
     overlay = <RestTimer seconds={restLeft} label="REST" hint="s until the next set" />;
   }
 
-  let widget = null;
-  if (phase === "resonance_breathing") widget = <SetsProgress cycles={state.cycles} />;
-  else if (phase === "short_holds" || (phase === "baseline_post" && holds.some((h) => h.kind === "short")))
-    widget = <HoldBars holds={holds} total={SHORT_HOLDS} />;
-  else if (phase === "hr_recovery") widget = <RecoveryCurve points={recovery} peak={state.hrPeak?.bpm ?? null} />;
-
   return (
     <GlassPanel className={cx("breathing-panel", "active")}>
       <div className="breath-header">
@@ -132,13 +118,6 @@ function BreathingPanel({
       <div className="phase-info">
         <span>{phaseText(state, now, leadLeft)}</span>
         {progress !== null && <div className="phase-progress"><ProgressBar value={progress} /></div>}
-      </div>
-      {widget}
-      <div className="avatar-session-controls">
-        {canEndHold && <Button onClick={onEndHold}>I'm done</Button>}
-        <Button variant="danger" onClick={onEnd}>
-          End session
-        </Button>
       </div>
     </GlassPanel>
   );
@@ -159,11 +138,9 @@ export function SessionScreen({
   onSummary: (summary: Summary) => void;
   onExit: () => void;
 }) {
-  const { state, finish, endHold, start } = useLiveSession({ userId, exercise: exercise.id, source });
+  const { state, start } = useLiveSession({ userId, exercise: exercise.id, source });
   const [probe, setProbe] = useState<Probe | null>(null);
   const [bestHoldS, setBestHoldS] = useState<number | null>(null);
-  const [recovery, setRecovery] = useState<{ t: number; bpm: number }[]>([]);
-  const recoveryKey = useRef<number | null>(null);
 
   // Hand the summary to the app as soon as the backend has produced it.
   useEffect(() => {
@@ -179,36 +156,18 @@ export function SessionScreen({
     api.dashboard(userId).then((d) => setBestHoldS(d.records.hold_s?.value ?? null)).catch(() => undefined);
   }, [exercise.id, userId]);
 
-  // HR recovery curve: 1 Hz heart rate since the recovery phase started.
   const { frame, vitals, device, status } = state;
-  useEffect(() => {
-    if (state.phase !== "hr_recovery" || !vitals?.hr.bpm) return;
-    if (recoveryKey.current !== state.phaseStartT) {
-      recoveryKey.current = state.phaseStartT;
-      setRecovery([]);
-    }
-    const t = vitals.t - state.phaseStartT;
-    setRecovery((r) => [...r, { t, bpm: vitals.hr.bpm! }]);
-  }, [vitals, state.phase, state.phaseStartT]);
 
   const lastEvent = [...state.events].reverse().find((e) => describeEvent(e));
   // Contact warnings (saturation, weak signal) belong to the signal check; during the exercise
   // only movement is something the person can fix.
   const firstWarning = state.quality?.warnings.find((w) => w.code === "motion");
   const warning = firstWarning ? (WARNING_TEXT[firstWarning.code] ?? firstWarning.text) : undefined;
-  const isResonance = exercise.id === "resonance_breathing";
-  const isPaced = !!frame?.pacer;
-  const score = !isResonance
-    ? undefined
-    : isPaced && vitals?.phase_lock
-      ? Math.round(vitals.phase_lock.value * 100)
-      : vitals ? Math.round(vitals.resonance.score) : null;
-  const canEndHold = state.phase === "breath_hold" && frame?.breath.stage === "hold";
   const checking = status === "connecting" || status === "checking";
 
   if (status === "error") {
     return (
-      <AppShell variant="session" headerContent={<BackButton onClick={onExit} label="Back" />}>
+      <AppShell variant="session" onBack={onExit}>
         <GlassPanel className="session-error">
           <h2>Could not start the session</h2>
           <p>{state.error}</p>
@@ -221,15 +180,12 @@ export function SessionScreen({
   return (
     <AppShell
       variant="session"
-     
+      onBack={onExit}
       headerContent={
-        <>
-          <div className="live-title">
-            <i /> {EXERCISE_TITLES[exercise.id] ?? exercise.title} <span>•</span> fNIRS {device ? `${device.fs_hz} Hz` : "…"}{" "}
-            <b>{device?.source === "simulated" ? "SIMULATION" : "RECORDING"}</b>
-          </div>
-          <BackButton onClick={onExit} label="Back" />
-        </>
+        <div className="live-title">
+          <i /> {EXERCISE_TITLES[exercise.id] ?? exercise.title}{" "}
+          {device && <b>{device.source === "simulated" ? "SIMULATION" : "RECORDING"}</b>}
+        </div>
       }
     >
       <section className="session-grid">
@@ -242,18 +198,12 @@ export function SessionScreen({
             state={state}
             avatar={avatar}
             bestHoldS={bestHoldS}
-            recovery={recovery}
-            canEndHold={canEndHold}
-            onEndHold={endHold}
-            onEnd={() => void finish()}
           />
         )}
         <div className="live-column">
           <LiveSignalCard
             samples={state.samples}
             exercise={exercise.id}
-            scoreLabel={isResonance ? (isPaced ? "RHYTHM MATCH" : "RESONANCE") : undefined}
-            score={score}
             stage={frame ? STAGE_LABELS[frame.breath.stage] : ""}
             hb={frame?.hb}
             footer={
@@ -290,7 +240,6 @@ export function SessionScreen({
           sessionId={state.sessionId}
           channels={state.channels}
           qualityChannels={state.quality?.channels}
-          breath={frame?.breath.signal ?? null}
         />
       </section>
     </AppShell>

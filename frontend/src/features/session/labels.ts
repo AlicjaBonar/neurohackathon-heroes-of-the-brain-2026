@@ -43,7 +43,3 @@ export function describeEvent(event: EventMsg): string | null {
 }
 
 export const STAGE_LABELS = { inhale: "INHALE", exhale: "EXHALE", hold: "HOLD" } as const;
-
-/** Greys out values the backend is not sure about (docs 0.1). */
-export const isLowConfidence = (confidence: number | undefined) =>
-  confidence !== undefined && confidence < 0.5;

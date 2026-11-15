@@ -11,7 +11,7 @@ export type MetricDef = {
   /** Same colours as the live tiles in the session view. */
   color: string;
   good: Good;
-  /** Multiplier applied to the stored value (phase lock is stored as 0-1). */
+  /** Multiplier applied to the stored value (for metrics stored as 0-1). */
   scale?: number;
   note: string;
 };
@@ -22,7 +22,6 @@ export const METRICS: MetricDef[] = [
   { key: "rmssd_ms", label: "HRV • RMSSD", unit: " ms", digits: 0, color: "#10b981", good: "up", note: "measured before the exercise" },
   { key: "resp_rate_bpm", label: "Breathing rate", unit: " /min", digits: 1, color: "#00a8c9", good: null, note: "low measurement confidence" },
   { key: "resonance_score", label: "Resonance 0.1 Hz", unit: " /100", digits: 0, color: "#a855f7", good: "up", note: "resonance breathing" },
-  { key: "phase_lock", label: "Rhythm match", unit: "%", digits: 0, color: "#14b8a6", good: "up", scale: 100, note: "breathing vs. the 6/min pace" },
   { key: "hold_s", label: "Breath hold", unit: " s", digits: 0, color: "#0ea5e9", good: "up", note: "longest in the session" },
   { key: "hold_hbo_peak_uM", label: "HbO rise", unit: " µM", digits: 2, color: "#3b82f6", good: null, note: "cortical response to the hold" },
   { key: "relaxation_score", label: "Relaxation", unit: " /100", digits: 0, color: "#65a30d", good: "up", note: "change in heart rate, HRV and resonance" },
@@ -79,7 +78,6 @@ export function summaryBars(s: Summary) {
   const bars: { label: string; hint?: string; value: number }[] = [];
   if (s.scores?.relaxation !== undefined) bars.push({ label: "Relaxation", value: s.scores.relaxation });
   if (s.scores?.resonance !== undefined) bars.push({ label: "Resonance", hint: "0.1 Hz power", value: s.scores.resonance });
-  if (s.scores?.phase_lock != null) bars.push({ label: "Rhythm match", value: Math.round(s.scores.phase_lock * 100) });
   if (s.quality.good_pct != null) bars.push({ label: "Measurement quality", hint: "good channels", value: Math.round(s.quality.good_pct) });
   return bars;
 }
