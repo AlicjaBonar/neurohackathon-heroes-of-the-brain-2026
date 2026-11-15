@@ -49,7 +49,6 @@ export default function App() {
         <HubScreen
           user={user}
           avatar={avatar}
-          onAvatarChange={setAvatar}
           onStats={() => setScreen("stats")}
           onProfile={() => setScreen("profile")}
           onSession={(exercise, source) => {

@@ -46,12 +46,10 @@ function Segmented<T extends string>({
 export function AvatarControls({
   avatar,
   onChange,
-  layout = "inline",
   showSex = true,
 }: {
   avatar: AvatarConfig;
   onChange: (avatar: AvatarConfig) => void;
-  layout?: "inline" | "centered";
   /** Hide when the surrounding form already has its own sex field. */
   showSex?: boolean;
 }) {
@@ -62,7 +60,7 @@ export function AvatarControls({
   );
 
   return (
-    <div className={cx("avatar-controls", layout === "centered" && "is-centered")}>
+    <div className="avatar-controls">
       {showSex && (
         <Segmented
           label="Płeć"
@@ -87,7 +85,7 @@ export function AvatarControls({
       <div className="control-group" aria-disabled={bald}>
         <span className="control-title">Kolor włosów</span>
         <div
-          className={cx(layout === "inline" ? "swatches" : "modal-swatches", bald && "is-disabled")}
+          className={cx("swatches", bald && "is-disabled")}
           role="radiogroup"
           aria-label="Kolor włosów"
         >

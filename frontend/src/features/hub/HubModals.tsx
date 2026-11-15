@@ -1,7 +1,4 @@
 import { Modal } from "@/components/ui/Modal";
-import { Avatar } from "@/features/avatar/Avatar";
-import type { AvatarConfig } from "@/features/avatar/avatarConfig";
-import { AvatarControls } from "@/features/avatar/AvatarControls";
 import type { Exercise, User } from "@/api/types";
 
 /** Ćwiczenia, których nie ma w nagraniach danego zbioru (sesja przełącza się wtedy na symulację). */
@@ -54,35 +51,6 @@ export function ActivityModal({
           );
         })}
       </div>
-    </Modal>
-  );
-}
-
-export function AvatarModal({
-  open,
-  onClose,
-  avatar,
-  onAvatarChange,
-}: {
-  open: boolean;
-  onClose: () => void;
-  avatar: AvatarConfig;
-  onAvatarChange: (avatar: AvatarConfig) => void;
-}) {
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      eyebrow="WYGLĄD"
-      title="Zmień awatara"
-      description="Ustaw płeć oraz rodzaj, długość i kolor włosów."
-      closeLabel="Gotowe"
-      className="avatar-modal"
-    >
-      <div className="avatar-preview">
-        <Avatar avatar={avatar} aura interactive />
-      </div>
-      <AvatarControls layout="centered" avatar={avatar} onChange={onAvatarChange} />
     </Modal>
   );
 }

@@ -7,7 +7,7 @@ import { ScreenTitle } from "@/components/ui/Page";
 import { Avatar } from "@/features/avatar/Avatar";
 import type { AvatarConfig } from "@/features/avatar/avatarConfig";
 import { cx, formatOrdinal } from "@/lib/utils";
-import { ActivityModal, AvatarModal } from "./HubModals";
+import { ActivityModal } from "./HubModals";
 
 type HubAction = {
   tone: "stats" | "start" | "avatar";
@@ -59,7 +59,7 @@ function ReadinessCard({
       type="button"
       className="readiness avatar-select"
       onClick={onAvatarClick}
-      aria-label="Zmień wygląd awatara"
+      aria-label="Zaktualizuj profil i wygląd awatara"
     >
       <div className="readiness-top">
       </div>
@@ -68,24 +68,20 @@ function ReadinessCard({
   );
 }
 
-type OpenModal = "activity" | "avatar" | null;
-
 export function HubScreen({
   user,
   avatar,
-  onAvatarChange,
   onStats,
   onProfile,
   onSession,
 }: {
   user: User;
   avatar: AvatarConfig;
-  onAvatarChange: (avatar: AvatarConfig) => void;
   onStats: () => void;
   onProfile: () => void;
   onSession: (exercise: Exercise, source: SourceIn) => void;
 }) {
-  const [openModal, setOpenModal] = useState<OpenModal>(null);
+  const [activityOpen, setActivityOpen] = useState(false);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
 
@@ -96,7 +92,6 @@ export function HubScreen({
 
   // Demo personas replay their own real recordings; everyone else gets the simulator.
   const source: SourceIn = user.is_demo ? { type: "replay" } : { type: "mock" };
-  const closeModal = () => setOpenModal(null);
 
   const actions: HubAction[] = [
     {
@@ -109,7 +104,7 @@ export function HubScreen({
       tone: "start",
       title: "Rozpocznij aktywność",
       subtitle: "Wybierz rodzaj sesji",
-      onClick: () => setOpenModal("activity"),
+      onClick: () => setActivityOpen(true),
     },
     {
       tone: "avatar",
@@ -125,32 +120,18 @@ export function HubScreen({
         eyebrow={`DZIEŃ DOBRY, ${user.name.toUpperCase()}`}
         title="Centrum treningowe"
         description="Wybierz tryb i zsynchronizuj oddech z aktywnością kory."
-        aside={
-          dashboard?.fitness.crf_mets != null ? (
-            <div className="day-score">
-              <span>Forma (CRF)</span>
-              <strong>{dashboard.fitness.crf_mets} MET</strong>
-            </div>
-          ) : undefined
-        }
       />
       <section className="hub-dashboard">
         <HubActionsPanel actions={actions} />
-        <ReadinessCard avatar={avatar} dashboard={dashboard} onAvatarClick={() => setOpenModal("avatar")} />
+        <ReadinessCard avatar={avatar} dashboard={dashboard} onAvatarClick={onProfile} />
       </section>
 
       <ActivityModal
-        open={openModal === "activity"}
-        onClose={closeModal}
+        open={activityOpen}
+        onClose={() => setActivityOpen(false)}
         exercises={exercises}
         user={user}
         onSelect={(exercise) => onSession(exercise, source)}
-      />
-      <AvatarModal
-        open={openModal === "avatar"}
-        onClose={closeModal}
-        avatar={avatar}
-        onAvatarChange={onAvatarChange}
       />
     </AppShell>
   );
