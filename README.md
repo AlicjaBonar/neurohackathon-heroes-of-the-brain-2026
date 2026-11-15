@@ -1,75 +1,77 @@
 # Heroes of the Brain 2026 – Breath, Brain & Body
 
-Wczytywanie i eksploracja danych fNIRS (Cortivision) z dwóch zbiorów:
-`dot_montage_sitting` (17 osób, 190 kanałów, 18,27 Hz) oraz
-`fnirs_high_freq_supine` (60 osób, 20 kanałów, 141,79 Hz).
-Opis wyzwania i zbiorów: [infopack/](infopack/). Wyniki eksploracji: [results/EDA_REPORT.md](results/EDA_REPORT.md).
+Loading and exploring fNIRS data (Cortivision) from two datasets:
+`dot_montage_sitting` (17 subjects, 190 channels, 18.27 Hz) and
+`fnirs_high_freq_supine` (60 subjects, 20 channels, 141.79 Hz).
+Challenge and dataset descriptions: [infopack/](infopack/). Exploration results: [results/EDA_REPORT.md](results/EDA_REPORT.md).
 
-> Dane wolno wykorzystywać wyłącznie podczas hackathonu (13–15.11.2026). Folder `data/` jest w `.gitignore`.
+> The data may only be used during the hackathon (Nov 13–15, 2026). The `data/` folder is in `.gitignore`.
 
-## Środowisko
+## Environment
 
 ```bash
 py -3.12 -m venv .venv
 .venv/Scripts/python -m pip install -r requirements.txt
 ```
 
-Dane muszą leżeć w:
+The data must be located in:
 
 ```
 data/dot_montage_sitting/{subjects_description.csv, data/{RS,SPB,BH}/*.snirf}
 data/fnirs_high_freq_supine/{subjects_description.csv, data/{baseline,BH}/*.snirf}
 ```
 
-## Uruchomienie
+## Running
 
 ```bash
-.venv/Scripts/python scripts/00_inspect_snirf.py      # struktura HDF5 przykładowych plików
-.venv/Scripts/python scripts/01_extract_features.py   # cechy ze wszystkich 288 plików (~1 min)
-.venv/Scripts/python scripts/02_explore.py            # wykresy + tabele + summary.json
-.venv/Scripts/python scripts/03_predictability.py     # korelacje cząstkowe + predykcja LOSO (~15 min)
-# opcjonalnie: niezależne sprawdzenie MNE w Cedalion (osobne środowisko POZA repo, patrz nagłówek skryptu)
+.venv/Scripts/python scripts/00_inspect_snirf.py      # HDF5 structure of sample files
+.venv/Scripts/python scripts/01_extract_features.py   # features from all 288 files (~1 min)
+.venv/Scripts/python scripts/02_explore.py            # plots + tables + summary.json
+.venv/Scripts/python scripts/03_predictability.py     # partial correlations + LOSO prediction (~15 min)
+# optional: independent MNE cross-check in Cedalion (separate environment OUTSIDE the repo, see script header)
 %USERPROFILE%/.venvs/hob-cedalion/Scripts/python scripts/04_crosscheck_cedalion.py
 ```
 
-## Backend aplikacji (FastAPI + SQLite + WebSocket z mockiem)
+## Application Backend (FastAPI + SQLite + WebSocket with mock)
 
-Specyfikacja: [docs/APP_SPEC.md](docs/APP_SPEC.md).
+Specification: [docs/APP_SPEC.md](docs/APP_SPEC.md).
 
 ```bash
 .venv/Scripts/python -m uvicorn app.backend.main:app --reload --port 8000
-# dokumentacja REST: http://localhost:8000/docs
-.venv/Scripts/python -m pytest tests -q          # testy (~10 s)
-.venv/Scripts/python scripts/10_seed_demo.py     # reset person demo (robi się też samo przy 1. starcie)
+# REST documentation: http://localhost:8000/docs
+.venv/Scripts/python -m pytest tests -q          # tests (~10 s)
+.venv/Scripts/python scripts/10_seed_demo.py     # reset demo personas (also runs automatically on 1st startup)
 ```
 
-| Plik | Rola |
+| File | Role |
 |---|---|
-| `app/backend/main.py` | endpointy REST + WebSocket `/ws/sessions/{id}` |
-| `app/backend/runtime.py` | stan sesji na żywo (w pamięci), fazy, podsumowanie |
-| `app/backend/mock_source.py` | symulator sygnału (oddech, tętno, HbO, ruch, bezdech) |
-| `app/backend/replay.py` | odtwarzanie prawdziwych nagrań SNIRF tej samej osoby (wymaga `data/`) |
-| `app/backend/exercises.py` | katalog ćwiczeń i ich przebieg |
-| `app/backend/seed.py` | persony demo z prawdziwych wyników (`results/*.csv`) |
+| `app/backend/main.py` | REST endpoints + WebSocket `/ws/sessions/{id}` |
+| `app/backend/runtime.py` | live session state (in memory), phases, summary |
+| `app/backend/mock_source.py` | signal simulator (breathing, heart rate, HbO, motion, breath-hold) |
+| `app/backend/replay.py` | playback of real SNIRF recordings of the same subject (requires `data/`) |
+| `app/backend/exercises.py` | exercise catalog and workflow |
+| `app/backend/seed.py` | demo personas generated from real results (`results/*.csv`) |
 | `app/backend/db.py`, `repo.py`, `schema.sql` | SQLite (`app_data/hob.db`) |
 
-Źródła danych w sesji (`POST /api/sessions`, pole `source`):
-- `{"type": "mock"}`: symulator, działa wszędzie;
-- `{"type": "replay"}` dla persony demo (np. `user_id: "demo_dot_03"`) albo `{"type": "replay", "recording_id": "dot/03"}`: prawdziwe nagrania tej osoby. DOT: pomiar, oddech rezonansowy (SPB), krótkie i maksymalny bezdech; supine: pomiar i bezdech. Ruch i powrót tętna zawsze z mocka.
+Session data sources (`POST /api/sessions`, `source` field):
+- `{"type": "mock"}`: simulator, works everywhere;
 
-Szybki przepływ: `POST /api/users` → `POST /api/sessions` → WebSocket → `{"type":"command","action":"start_phase","phase":"baseline_pre"}` → … → `POST /api/sessions/{id}/finish` → `GET /api/sessions/{id}/summary`.
+- `{"type": "replay"}` for a demo persona (e.g., `user_id: "demo_dot_03"`) or `{"type": "replay", "recording_id": "dot/03"}`: real recordings of that subject. DOT: baseline measurement, slow-paced/resonant breathing (SPB), short and maximum breath-hold; supine: baseline measurement and breath-hold. Motion and heart rate recovery always come from the mock.
 
-## Biblioteka `src/hob`
 
-| Moduł | Zawartość |
+Quick flow: `POST /api/users` → `POST /api/sessions` → WebSocket → `{"type":"command","action":"start_phase","phase":"baseline_pre"}` → … → `POST /api/sessions/{id}/finish` → `GET /api/sessions/{id}/summary`.
+
+## `src/hob` Library
+
+| Module | Contents |
 |---|---|
-| `io.py` | `load_snirf(path)` → `Recording` (natężenie, kanały z odległościami, znaczniki, akcelerometr/żyroskop, brakujące próbki, pozycje optod); `list_files(dataset)` – inwentarz plików z ID osoby, zadaniem i sesją |
-| `subjects.py` | `load_subjects("dot"/"supine")` – oczyszczone metryczki: angielskie nazwy kolumn, skale liczbowe włosów (0–4), Fitzpatrick 1–6, BMI, leki |
-| `pipeline.py` | **standardowe przetwarzanie**: MNE-Python (OD, SCI, TDDR, Beer-Lambert z DPF zależnym od wieku) + NeuroKit2 (uderzenia serca, HRV, częstość oddechu); `hemo(rec, age)`, `beats`, `hrv`, `resp_rate` |
-| `signal.py` | OD, prawo Beera-Lamberta z DPF zależnym od wieku, SCI, filtry, widma, tętno, detekcja uderzeń, HRV, szablon fali tętna, częstość oddechu, metryki ruchu, epoki |
-| `features.py` | `process_file(row, age)` – komplet cech z jednego nagrania + uśrednione odpowiedzi na zdarzenia |
+| `io.py` | `load_snirf(path)` → `Recording` (intensity, channels with distances, markers, accelerometer/gyroscope, missing samples, optode positions); `list_files(dataset)` – inventory of files with subject ID, task, and session |
+| `subjects.py` | `load_subjects("dot"/"supine")` – cleaned demographic/subject metadata: English column names, numerical hair scales (0–4), Fitzpatrick 1–6, BMI, medications |
+| `pipeline.py` | **standard processing**: MNE-Python (OD, SCI, TDDR, Beer-Lambert with age-dependent DPF) + NeuroKit2 (heartbeats, HRV, respiratory rate); `hemo(rec, age)`, `beats`, `hrv`, `resp_rate` |
+| `signal.py` | OD, Beer-Lambert law with age-dependent DPF, SCI, filters, spectra, heart rate, beat detection, HRV, pulse wave template, respiratory rate, motion metrics, epochs |
+| `features.py` | `process_file(row, age)` – full feature set from a single recording + event-averaged responses |
 
-Przykład:
+Example:
 
 ```python
 import sys; sys.path.insert(0, "src")
@@ -84,14 +86,14 @@ print(P.hrv(beats))                     # HR, RMSSD, SDNN
 acc, gyro = S.split_aux(rec.aux)
 ```
 
-## Wyniki (`results/`)
+## Results (`results/`)
 
-| Plik | Zawartość |
+| File | Contents |
 |---|---|
-| `features.csv` | 1 wiersz na nagranie, ~90 cech |
-| `channels.csv` | 1 wiersz na parę źródło–detektor w każdym nagraniu (natężenie, SCI, przesterowanie) |
-| `holds_supine.csv` | każdy bezdech w zbiorze supine z czasem trwania |
-| `subjects.csv` | oczyszczone metryczki obu zbiorów |
-| `tables/*.csv` | statystyki, korelacje, predykcja |
-| `figures/*.png` | wykresy |
-| `EDA_REPORT.md` | podsumowanie wniosków |
+| `features.csv` | 1 row per recording, ~90 features |
+| `channels.csv` | 1 row per source–detector pair in each recording (intensity, SCI, saturation/clipping) |
+| `holds_supine.csv` | every breath-hold in the supine dataset with duration |
+| `subjects.csv` | cleaned demographic/subject metadata for both datasets |
+| `tables/*.csv` | statistics, correlations, prediction |
+| `figures/*.png` | plots |
+| `EDA_REPORT.md` | summary of findings |
