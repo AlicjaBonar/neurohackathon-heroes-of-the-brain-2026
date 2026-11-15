@@ -67,6 +67,17 @@ export type Dashboard = {
 export type History = {
   metrics: Record<string, SeriesPoint[]>;
   baseline: Record<string, number | null>;
+  /** Present with `by_hour`: mean per hour of the day. */
+  by_hour?: Record<string, { hour: number; value: number; n: number }[]>;
+};
+
+export type Fitness = {
+  crf_mets: number | null;
+  method: string;
+  components: Record<string, { value: number | string | null; source: Source | null }>;
+  hr_recovery: { drop_1min_bpm: number; source: Source; note: string } | null;
+  trend: { t: string; crf_mets: number }[];
+  missing: string[];
 };
 
 // ---------------------------------------------------------------- exercises / sessions

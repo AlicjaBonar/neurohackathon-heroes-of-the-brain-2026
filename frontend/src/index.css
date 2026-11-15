@@ -3251,3 +3251,223 @@ h1 {
 }
 .activity-choices .data-badge.real { background: #d1fae5; color: #047857; }
 .activity-choices .data-badge.sim { background: #fef3c7; color: #b45309; }
+
+/* ---- vital parameters (stats) ---- */
+.stats-page {
+  max-width: 1300px;
+  margin: 0 auto;
+  display: grid;
+  gap: 16px;
+  position: relative;
+  z-index: 2;
+}
+.stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.stat-tile .spark {
+  width: 100%;
+  height: 32px;
+  margin: 4px 0 2px;
+}
+
+.vital-delta.neutral {
+  color: #0369a1;
+  background: #e0f2fe;
+}
+.stat-readiness {
+  max-width: 1300px;
+  margin: 0 auto 14px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  position: relative;
+  z-index: 2;
+}
+.stat-readiness i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #10b981;
+}
+.stat-columns {
+  display: grid;
+  grid-template-columns: 1.4fr 0.9fr;
+  gap: 16px;
+}
+.stat-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+/* the last card stretches so both columns end at the same height */
+.stat-side .summary-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.stat-side .summary-card .summary-bars {
+  flex: 1;
+  justify-content: space-evenly;
+}
+.stat-chart,
+.hour-card,
+.fitness-card {
+  padding: 22px;
+}
+.stat-base {
+  font-size: 14px !important;
+  letter-spacing: 0 !important;
+  color: #5f7d83 !important;
+}
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0 8px;
+}
+.chip {
+  border: 1px solid rgba(15, 76, 92, 0.15);
+  background: rgba(255, 255, 255, 0.6);
+  color: #4f7077;
+  border-radius: 999px;
+  padding: 6px 13px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.chip.on {
+  background: var(--tone);
+  border-color: var(--tone);
+  color: #fff;
+}
+.stat-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.stat-svg .grid {
+  stroke: rgba(15, 76, 92, 0.1);
+}
+.stat-svg .axis {
+  font-size: 13px;
+  fill: #81999d;
+}
+.hour-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 12px;
+  height: 150px;
+  margin-top: 14px;
+}
+.hour-bar {
+  flex: 1;
+  max-width: 90px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+}
+.hour-bar i {
+  width: 100%;
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(#6366f1, #a5b4fc);
+}
+.hour-bar b {
+  font-size: 15px;
+  color: #4f46e5;
+}
+.hour-bar small {
+  font-size: 13px;
+  color: #5f7d83;
+}
+.fit-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.fit-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 15px;
+}
+
+/* readable sizes on this screen (the global card styles are very small) */
+.stats-page .vital-tile {
+  padding: 18px 20px;
+  gap: 6px;
+}
+.stats-page .vital-tile small {
+  font-size: 13px;
+}
+.stats-page .vital-tile strong {
+  font-size: 34px;
+}
+.stats-page .vital-tile strong em {
+  font-size: 15px;
+}
+.stats-page .vital-delta {
+  font-size: 13px;
+  padding: 2px 9px;
+}
+.stats-page .sim-tag {
+  font-size: 11px;
+}
+.stats-page .card-head span {
+  font-size: 12px;
+  letter-spacing: 1.2px;
+}
+.stats-page .card-head h2 {
+  font-size: 20px;
+}
+.stats-page .chart-score strong {
+  font-size: 26px;
+}
+.stats-page .summary-bars > div {
+  grid-template-columns: 160px 1fr 48px;
+}
+.stats-page .summary-bars span {
+  font-size: 14px;
+}
+.stats-page .summary-bars strong {
+  font-size: 15px;
+}
+.stats-page .summary-bars i {
+  height: 8px;
+}
+.stats-page .good-badge {
+  font-size: 13px;
+}
+.stats-page .empty-note {
+  font-size: 14px;
+}
+.back-row > span,
+.date-range {
+  font-size: 12px;
+}
+.stat-readiness {
+  font-size: 16px;
+}
+@media (max-width: 1100px) {
+  .stat-tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1000px) {
+  .stat-columns {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 700px) {
+  .stat-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
