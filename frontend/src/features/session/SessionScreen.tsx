@@ -208,7 +208,7 @@ export function SessionScreen({
 
   if (status === "error") {
     return (
-      <AppShell variant="session" tagline="BREATH • MOTION • FLOW" headerContent={<BackButton onClick={onExit} label="Back" />}>
+      <AppShell variant="session" headerContent={<BackButton onClick={onExit} label="Back" />}>
         <GlassPanel className="session-error">
           <h2>Could not start the session</h2>
           <p>{state.error}</p>
@@ -221,7 +221,7 @@ export function SessionScreen({
   return (
     <AppShell
       variant="session"
-      tagline="BREATH • MOTION • FLOW"
+     
       headerContent={
         <>
           <div className="live-title">

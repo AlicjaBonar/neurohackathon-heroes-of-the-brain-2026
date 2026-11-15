@@ -81,31 +81,10 @@ header {
   color: #56818a;
 }
 .brand-mark {
-  width: 37px;
-  height: 37px;
-  border-radius: 12px;
-  background: linear-gradient(145deg, #0d9488, #28b9a8);
-  box-shadow: 0 7px 16px #0d948839;
-  display: flex;
-  align-items: end;
-  justify-content: center;
-  gap: 3px;
-  padding: 9px;
-}
-.brand-mark span {
-  display: block;
-  width: 4px;
-  border-radius: 3px;
-  background: white;
-}
-.brand-mark span:nth-child(1) {
-  height: 11px;
-}
-.brand-mark span:nth-child(2) {
-  height: 19px;
-}
-.brand-mark span:nth-child(3) {
-  height: 14px;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex: 0 0 auto;
 }
 .status-pill {
   display: flex;
@@ -1736,11 +1715,6 @@ h1 {
   box-shadow: 0 12px 25px rgba(32, 105, 105, 0.1);
 }
 
-.activity-choices small {
-  color: #88a0a4;
-  font-size: 8px;
-}
-
 .activity-choices div {
   flex: 1;
 }
@@ -1760,13 +1734,6 @@ h1 {
   font-size: 8px;
 }
 
-.activity-choices b {
-  padding: 6px 9px;
-  border-radius: 20px;
-  background: #e3f7f4;
-  color: #0d9488;
-  font-size: 8px;
-}
 
 .avatar-modal {
   width: min(620px, 100%);
@@ -3243,11 +3210,10 @@ h1 {
 .activity-choices .data-badge {
   display: inline-block;
   margin-top: 6px;
-  padding: 2px 8px;
-  border-radius: 999px;
+  padding: 0;
   font-style: normal;
   font-size: 9px;
   font-weight: 700;
 }
-.activity-choices .data-badge.real { background: #d1fae5; color: #047857; }
-.activity-choices .data-badge.sim { background: #fef3c7; color: #b45309; }
+.activity-choices .data-badge.real { background: none; color: #047857; }
+.activity-choices .data-badge.sim { background: none; color: #b45309; }

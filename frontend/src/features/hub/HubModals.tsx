@@ -3,9 +3,6 @@ import { Avatar } from "@/features/avatar/Avatar";
 import type { AvatarConfig } from "@/features/avatar/avatarConfig";
 import { AvatarControls } from "@/features/avatar/AvatarControls";
 import type { Exercise, User } from "@/api/types";
-import { formatOrdinal } from "@/lib/utils";
-
-const formatMinutes = (seconds: number) => `~${Math.max(1, Math.round(seconds / 60))} min`;
 
 /** Ćwiczenia, których nie ma w nagraniach danego zbioru (sesja przełącza się wtedy na symulację). */
 const NOT_RECORDED: Record<string, string[]> = {
@@ -39,23 +36,20 @@ export function ActivityModal({
     <Modal
       open={open}
       onClose={onClose}
-      eyebrow="NOWA SESJA"
       title="Wybierz aktywność"
       description="Każdy tryb dostosowuje rytm oddechu i analizę fNIRS."
     >
       <div className="activity-choices">
         {exercises.length === 0 && <p>Nie udało się pobrać listy ćwiczeń z backendu.</p>}
-        {exercises.map((exercise, index) => {
+        {exercises.map((exercise) => {
           const src = dataSource(user, exercise);
           return (
             <button type="button" key={exercise.id} onClick={() => onSelect(exercise)}>
-              <small>{formatOrdinal(index)}</small>
               <div>
                 <strong>{exercise.title}</strong>
                 <span>{exercise.description}</span>
                 <em className={`data-badge ${src.real ? "real" : "sim"}`}>{src.text}</em>
               </div>
-              <b>{formatMinutes(exercise.duration_s)}</b>
             </button>
           );
         })}

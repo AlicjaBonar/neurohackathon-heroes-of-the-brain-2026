@@ -1,16 +1,12 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { getJson } from "@/api/rest";
 
-export function Brand({ tagline = "ODDECH • RUCH • FLOW" }: { tagline?: string }) {
+export function Brand({ tagline = "KEEP CALM AND CHECK YOUR BREATH" }: { tagline?: string }) {
   return (
     <div className="brand">
-      <div className="brand-mark">
-        <span />
-        <span />
-        <span />
-      </div>
+      <img className="brand-mark" src="/logo.png" alt="" />
       <div>
-        <strong>NeuroFlow</strong>
+        <strong>BreathMaxxxing</strong>
         <small>{tagline}</small>
       </div>
     </div>

@@ -168,7 +168,7 @@ export function SummaryScreen({ summary, onDone }: { summary: Summary; onDone: (
   const when = new Date().toLocaleString("en-GB", { weekday: "long", hour: "2-digit", minute: "2-digit" });
 
   return (
-    <AppShell tagline="BREATH • MOTION • FLOW" headerContent={<StatusPill english />}>
+    <AppShell headerContent={<StatusPill english />}>
       <ScreenTitle
         eyebrow={`SESSION COMPLETE • ${formatDuration(Math.round(summary.duration_s))}`}
         title={EXERCISE_TITLES[summary.exercise] ?? summary.exercise}

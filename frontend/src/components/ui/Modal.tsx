@@ -6,7 +6,7 @@ import { GlassPanel } from "./Card";
 type ModalProps = {
   open: boolean;
   onClose: () => void;
-  eyebrow: ReactNode;
+  eyebrow?: ReactNode;
   title: string;
   description?: ReactNode;
   closeLabel?: string;
@@ -43,7 +43,7 @@ export function Modal({
         <Button variant="ghost" className="modal-close" onClick={onClose}>
           {closeLabel}
         </Button>
-        <span className="eyebrow">{eyebrow}</span>
+        {eyebrow && <span className="eyebrow">{eyebrow}</span>}
         <h2>{title}</h2>
         {description && <p>{description}</p>}
         {children}
