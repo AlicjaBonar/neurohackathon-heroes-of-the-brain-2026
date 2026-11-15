@@ -49,5 +49,5 @@ export function errorMessage(error: unknown): string {
       /* fall through */
     }
   }
-  return error instanceof Error ? error.message : "Nieznany błąd";
+  return error instanceof Error ? error.message : "Unknown error";
 }

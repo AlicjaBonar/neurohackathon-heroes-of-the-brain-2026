@@ -11,7 +11,7 @@ function AvatarPreviewPanel({ avatar }: { avatar: AvatarConfig }) {
   return (
     <GlassPanel className="avatar-panel">
       <div className="science-tag">
-        <Icon name="wave" size={16} /> OPTYCZNA TOMOGRAFIA KORY
+        <Icon name="wave" size={16} /> CORTICAL OPTICAL TOMOGRAPHY
       </div>
       <Avatar avatar={avatar} interactive />
     </GlassPanel>
@@ -33,9 +33,9 @@ export function ProfileScreen({
   return (
     <AppShell>
       <ScreenTitle
-        eyebrow="KROK 1 Z 2"
-        title="Profil i kalibracja"
-        description="Dopasuj profil, aby zwiększyć precyzję odczytów biomarkerów."
+        eyebrow="STEP 1 OF 2"
+        title="Profile and calibration"
+        description="Fill in your profile to make the biomarker readings more accurate."
         aside={<StepIndicator current={1} total={2} />}
       />
       <section className="split profile-grid">

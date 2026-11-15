@@ -16,7 +16,7 @@ export function Brand({ tagline = "KEEP CALM AND CHECK YOUR BREATH" }: { tagline
 type Health = { status: string; version: string; demo_data: boolean };
 
 /** Backend connection indicator (GET /api/health). */
-export function StatusPill({ english = false }: { english?: boolean }) {
+export function StatusPill() {
   const [health, setHealth] = useState<Health | "offline" | null>(null);
   useEffect(() => {
     const controller = new AbortController();
@@ -28,9 +28,7 @@ export function StatusPill({ english = false }: { english?: boolean }) {
   return (
     <div className="status-pill">
       <i />{" "}
-      {english
-        ? health === "offline" ? "Backend offline" : health ? "Backend connected" : "Connecting…"
-        : health === "offline" ? "Brak połączenia z backendem" : health ? "Backend połączony" : "Łączenie…"}
+      {health === "offline" ? "Backend offline" : health ? "Backend connected" : "Connecting…"}
       {health && health !== "offline" && <b>v{health.version}</b>}
     </div>
   );

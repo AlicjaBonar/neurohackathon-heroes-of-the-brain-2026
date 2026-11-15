@@ -23,6 +23,8 @@ from . import exercises as ex
 from . import metrics as M
 from . import runtime
 
+CRF_METHOD = "Jurca 2005: sex, age, BMI, resting heart rate, activity survey"
+
 
 # ---------------------------------------------------------------------------- errors
 
@@ -178,11 +180,11 @@ def dashboard(uid: str):
         text = None
         if h and h["delta"] is not None:
             if h["delta"] <= -2:
-                text = "Tętno spoczynkowe niższe niż zwykle – dobra regeneracja."
+                text = "Resting heart rate lower than usual – good recovery."
             elif h["delta"] >= 3:
-                text = "Tętno spoczynkowe wyższe niż zwykle – może warto odpocząć."
+                text = "Resting heart rate higher than usual – maybe take it easy today."
             else:
-                text = "Tętno spoczynkowe w Twojej normie."
+                text = "Resting heart rate within your normal range."
         crf = repo.metric_series(conn, uid, "crf_mets", "session")
         last_sessions = conn.execute(
             "SELECT id, started_at, exercise, status FROM sessions WHERE user_id = ? AND status = 'finished'"
@@ -194,7 +196,7 @@ def dashboard(uid: str):
             readiness=dict(hr_rest=h, rmssd=r, text=text),
             fitness=dict(crf_mets=round(crf[-1]["value"], 1) if crf else None,
                          trend=[dict(t=x["t"], value=round(x["value"], 1)) for x in crf[-10:]],
-                         method="Jurca 2005: płeć, wiek, BMI, tętno spoczynkowe, ankieta"),
+                         method=CRF_METHOD),
             records=dict(hold_s=repo.metric_best(conn, uid, "hold_s"),
                          resonance_score=repo.metric_best(conn, uid, "resonance_score")),
             sparklines=spark,
@@ -238,7 +240,7 @@ def fitness(uid: str):
         rec = repo.metric_series(conn, uid, "hr_recovery_drop_bpm", "after")
         return dict(
             crf_mets=round(crf, 1) if crf else None,
-            method="Jurca 2005: płeć, wiek, BMI, tętno spoczynkowe, ankieta",
+            method=CRF_METHOD,
             components=dict(
                 hr_rest_bpm=dict(value=round(hr_rest, 1) if hr_rest else None,
                                  source=hr[-1]["source"] if hr else None),
@@ -246,7 +248,7 @@ def fitness(uid: str):
                 bmi=dict(value=d["bmi"], source="user"), age=dict(value=d["age"], source="user"),
                 sex=dict(value=u["sex"], source="user")),
             hr_recovery=dict(drop_1min_bpm=round(rec[-1]["value"], 1), source="simulated",
-                             note="symulacja – brak danych z wysiłku w zbiorze") if rec else None,
+                             note="simulated – the dataset has no exercise data") if rec else None,
             trend=[dict(t=x["t"], crf_mets=round(x["value"], 2)) for x in trend],
             missing=[k for k, v in dict(sex=u["sex"], age=d["age"], bmi=d["bmi"], hr_rest=hr_rest,
                                         activity=u["activity_score"]).items() if v is None],
@@ -280,8 +282,8 @@ def sources(dataset: Optional[str] = None, task: Optional[str] = None):
                              has_markers=bool(r.n_events), suggested_for=suggest.get(r.task, []),
                              available=True))
     return dict(recordings=recs,
-                mock=[dict(type="mock", label="Symulacja", available=True)],
-                note="replay: podaj recording_id osoby ('dot/03', 'supine/10'); fazy sesji są mapowane na jej nagrania.")
+                mock=[dict(type="mock", label="Simulation", available=True)],
+                note="replay: pass the person's recording_id ('dot/03', 'supine/10'); session phases are mapped to their recordings.")
 
 
 # ---------------------------------------------------------------------------- sessions
@@ -337,8 +339,8 @@ def probe(sid: str):
     if ls:
         return ls.src.probe()
     if s["source_type"] == "replay":
-        from .replay import ReplaySource
-        return ReplaySource(s["recording_id"], None).probe()
+        from .replay import probe_for
+        return probe_for(s["recording_id"])
     from .mock_source import MockSource
     return MockSource(seed=0).probe()
 

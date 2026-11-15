@@ -17,7 +17,7 @@ function StatTile({ stat }: { stat: MetricStat }) {
     <GlassPanel as="article" className="vital-tile stat-tile" style={{ "--tone": def.color } as CSSProperties}>
       <small>
         {def.label}
-        {simulated && <span className="sim-tag" title="Wartość symulowana">SYM</span>}
+        {simulated && <span className="sim-tag" title="Simulated value">SYM</span>}
       </small>
       <strong>
         {fmt(latest.value, def.digits)}
@@ -26,7 +26,7 @@ function StatTile({ stat }: { stat: MetricStat }) {
       {delta !== null && (
         <span className={cx("vital-delta", improved === null ? "neutral" : improved ? "good" : "bad")}>
           {delta >= 0 ? "↑" : "↓"} {Math.abs(delta).toFixed(def.digits)}
-          {" "}vs średnia
+          {" "}vs average
         </span>
       )}
       <Sparkline values={points.slice(-10).map((p) => p.value)} color={def.color} />
@@ -67,28 +67,28 @@ export function StatsScreen({ userId, onBack }: { userId: string; onBack: () => 
     <AppShell>
       <div className="back-row">
         <BackButton onClick={onBack} />
-        <span>PARAMETRY ŻYCIOWE</span>
+        <span>VITALS</span>
       </div>
       <ScreenTitle
         className="stats-title"
-        eyebrow="TWOJE POSTĘPY"
-        title="Parametry życiowe"
-        description="Wskaźniki z sesji na żywo, w czasie i względem Twojej średniej."
+        eyebrow="YOUR PROGRESS"
+        title="Vitals"
+        description="Metrics from your live sessions, over time and against your own average."
         aside={
           <div className="date-range">
-            {lastDate ? `OSTATNIA SESJA ${new Date(lastDate).toLocaleDateString("pl-PL")}` : "BRAK SESJI"}
+            {lastDate ? `LAST SESSION ${new Date(lastDate).toLocaleDateString("en-GB")}` : "NO SESSIONS"}
           </div>
         }
       />
-      {failed && <p className="form-error">Nie udało się pobrać danych z backendu.</p>}
-      {loading && <p className="empty-note">Wczytywanie…</p>}
+      {failed && <p className="form-error">Could not load data from the backend.</p>}
+      {loading && <p className="empty-note">Loading…</p>}
       {dashboard?.readiness.text && (
         <GlassPanel className="stat-readiness">
           <i /> {dashboard.readiness.text}
         </GlassPanel>
       )}
       {history && !stats.length && (
-        <p className="empty-note">Nie ma jeszcze zakończonych sesji. Zrób pierwszą sesję, a tu pojawią się Twoje parametry.</p>
+        <p className="empty-note">No finished sessions yet. Complete your first session and your vitals will appear here.</p>
       )}
       {stats.length > 0 && (
         <section className="stats-page">

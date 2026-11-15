@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api/backend";
-import type { Dashboard, Exercise, SourceIn, User } from "@/api/types";
+import type { Exercise, SourceIn, User } from "@/api/types";
 import { AppShell } from "@/components/layout/AppShell";
 import { GlassPanel } from "@/components/ui/Card";
 import { ScreenTitle } from "@/components/ui/Page";
@@ -20,9 +20,9 @@ function HubActionsPanel({ actions }: { actions: HubAction[] }) {
   return (
     <GlassPanel className="hub-actions">
       <div className="hub-actions-copy">
-        <span className="eyebrow">TWÓJ DZISIEJSZY PLAN</span>
-        <h2>Gotowy na kolejną sesję?</h2>
-        <p>Sprawdź parametry albo rozpocznij trening dopasowany do aktualnej gotowości.</p>
+        <span className="eyebrow">YOUR PLAN FOR TODAY</span>
+        <h2>Ready for another session?</h2>
+        <p>Check your vitals or start a workout matched to how ready you are today.</p>
       </div>
       <div className="hub-button-row">
         {actions.map((action, index) => (
@@ -42,27 +42,15 @@ function HubActionsPanel({ actions }: { actions: HubAction[] }) {
   );
 }
 
-function ReadinessCard({
-  avatar,
-  dashboard,
-  onAvatarClick,
-}: {
-  avatar: AvatarConfig;
-  dashboard: Dashboard | null;
-  onAvatarClick: () => void;
-}) {
-  const hr = dashboard?.readiness.hr_rest;
-  const rmssd = dashboard?.readiness.rmssd;
+function ReadinessCard({ avatar, onAvatarClick }: { avatar: AvatarConfig; onAvatarClick: () => void }) {
   return (
     <GlassPanel
       as="button"
       type="button"
       className="readiness avatar-select"
       onClick={onAvatarClick}
-      aria-label="Zaktualizuj profil i wygląd awatara"
+      aria-label="Update your profile and avatar"
     >
-      <div className="readiness-top">
-      </div>
       <Avatar aura avatar={avatar} introGesture="six_seven" />
     </GlassPanel>
   );
@@ -82,11 +70,9 @@ export function HubScreen({
   onSession: (exercise: Exercise, source: SourceIn) => void;
 }) {
   const [activityOpen, setActivityOpen] = useState(false);
-  const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
 
   useEffect(() => {
-    api.dashboard(user.id).then(setDashboard).catch(() => setDashboard(null));
     api.exercises().then(setExercises).catch(() => setExercises([]));
   }, [user.id]);
 
@@ -96,20 +82,20 @@ export function HubScreen({
   const actions: HubAction[] = [
     {
       tone: "stats",
-      title: "Parametry życiowe",
-      subtitle: "Statystyki i trendy",
+      title: "Vitals",
+      subtitle: "Statistics and trends",
       onClick: onStats,
     },
     {
       tone: "start",
-      title: "Rozpocznij aktywność",
-      subtitle: "Wybierz rodzaj sesji",
+      title: "Start an activity",
+      subtitle: "Choose a session type",
       onClick: () => setActivityOpen(true),
     },
     {
       tone: "avatar",
-      title: "Zaktualizuj profil",
-      subtitle: "Dane i wygląd awatara",
+      title: "Update profile",
+      subtitle: "Your details and avatar",
       onClick: onProfile,
     },
   ];
@@ -117,13 +103,13 @@ export function HubScreen({
   return (
     <AppShell>
       <ScreenTitle
-        eyebrow={`DZIEŃ DOBRY, ${user.name.toUpperCase()}`}
-        title="Centrum treningowe"
-        description="Wybierz tryb i zsynchronizuj oddech z aktywnością kory."
+        eyebrow={`GOOD DAY, ${user.name.toUpperCase()}`}
+        title="Training hub"
+        description="Pick a mode and sync your breathing with your cortical activity."
       />
       <section className="hub-dashboard">
         <HubActionsPanel actions={actions} />
-        <ReadinessCard avatar={avatar} dashboard={dashboard} onAvatarClick={onProfile} />
+        <ReadinessCard avatar={avatar} onAvatarClick={onProfile} />
       </section>
 
       <ActivityModal

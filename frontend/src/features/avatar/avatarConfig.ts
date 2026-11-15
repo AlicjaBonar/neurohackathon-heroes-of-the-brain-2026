@@ -22,28 +22,28 @@ export const DEFAULT_AVATAR: AvatarConfig = {
 };
 
 export const SEX_OPTIONS: { value: Sex; label: string }[] = [
-  { value: "F", label: "Kobieta" },
-  { value: "M", label: "Mężczyzna" },
+  { value: "F", label: "Female" },
+  { value: "M", label: "Male" },
 ];
 
 export const TEXTURE_OPTIONS: { value: HairTexture; label: string }[] = [
-  { value: "straight", label: "Proste" },
-  { value: "wavy", label: "Falowane" },
-  { value: "curly", label: "Kręcone" },
-  { value: "bald", label: "Łysy" },
+  { value: "straight", label: "Straight" },
+  { value: "wavy", label: "Wavy" },
+  { value: "curly", label: "Curly" },
+  { value: "bald", label: "Bald" },
 ];
 
 export const LENGTH_OPTIONS: { value: HairLength; label: string }[] = [
-  { value: "short", label: "Krótkie" },
-  { value: "long", label: "Długie" },
+  { value: "short", label: "Short" },
+  { value: "long", label: "Long" },
 ];
 
 export const HAIR_COLOR_PRESETS: { label: string; hex: string }[] = [
-  { label: "Blond", hex: "#d9b36b" },
-  { label: "Brązowe", hex: "#5c3821" },
-  { label: "Czarne", hex: "#141212" },
-  { label: "Rude", hex: "#b34d21" },
-  { label: "Siwe", hex: "#c7c7cc" },
+  { label: "Blonde", hex: "#d9b36b" },
+  { label: "Brown", hex: "#5c3821" },
+  { label: "Black", hex: "#141212" },
+  { label: "Red", hex: "#b34d21" },
+  { label: "Grey", hex: "#c7c7cc" },
 ];
 
 export function hairFilename({ texture, length }: Pick<AvatarConfig, "texture" | "length">) {

@@ -1,16 +1,5 @@
 import type { EventMsg } from "@/api/types";
 
-export const PHASE_LABELS: Record<string, string> = {
-  baseline_pre: "Pomiar spoczynkowy",
-  baseline_post: "Pomiar po ćwiczeniu",
-  resonance_breathing: "Oddech rezonansowy",
-  short_holds: "Krótkie bezdechy",
-  breath_hold: "Bezdech maksymalny",
-  hr_recovery: "Powrót tętna",
-};
-
-// ---- live session screen (English UI) ----
-
 /** Phase names shown during the live session. */
 export const SESSION_PHASE_LABELS: Record<string, string> = {
   baseline_pre: "Resting baseline",
@@ -21,7 +10,7 @@ export const SESSION_PHASE_LABELS: Record<string, string> = {
   hr_recovery: "Heart rate recovery",
 };
 
-/** Exercise titles for the session header (the backend catalogue is in Polish). */
+/** Exercise titles for the session header (short forms of the backend catalogue titles). */
 export const EXERCISE_TITLES: Record<string, string> = {
   resonance_breathing: "Resonance breathing 6/min",
   short_holds: "Short breath holds 7 × 10 s",
@@ -29,7 +18,7 @@ export const EXERCISE_TITLES: Record<string, string> = {
   hr_recovery: "Heart rate recovery",
 };
 
-/** Signal-quality warnings by code (the backend text is in Polish). */
+/** Signal-quality warnings by code (shorter than the backend text, which carries the counts). */
 export const WARNING_TEXT: Record<string, string> = {
   motion: "Too much movement – sit comfortably and keep your head still",
   saturation: "Saturated channels – adjust the headband",

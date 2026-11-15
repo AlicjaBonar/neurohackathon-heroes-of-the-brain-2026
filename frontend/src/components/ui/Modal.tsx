@@ -21,7 +21,7 @@ export function Modal({
   eyebrow,
   title,
   description,
-  closeLabel = "Zamknij",
+  closeLabel = "Close",
   className,
   children,
 }: ModalProps) {

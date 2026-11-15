@@ -54,7 +54,7 @@ export function TrendCard({ stats }: { stats: MetricStat[] }) {
       <CardHeader
         caption="TREND"
         title={def.label}
-        aside={base !== null && <span className="stat-base">średnia: {fmt(base, def.digits)}{def.unit}</span>}
+        aside={base !== null && <span className="stat-base">average: {fmt(base, def.digits)}{def.unit}</span>}
       />
       <div className="chip-row" role="tablist">
         {stats.map((s) => (
@@ -71,7 +71,7 @@ export function TrendCard({ stats }: { stats: MetricStat[] }) {
           </button>
         ))}
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="stat-svg" role="img" aria-label={`Wykres: ${def.label}`}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="stat-svg" role="img" aria-label={`Chart: ${def.label}`}>
         {ticks.map((t) => (
           <g key={t}>
             <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} className="grid" />
@@ -83,7 +83,7 @@ export function TrendCard({ stats }: { stats: MetricStat[] }) {
         {pts.map((p, i) => (
           <g key={i}>
             <circle cx={x(i)} cy={y(p.value)} r={i === pts.length - 1 ? 6 : 4} fill={def.color} opacity={p.source === "simulated" ? 0.45 : 1}>
-              <title>{`${shortDate(p.t)}: ${fmt(p.value, def.digits)}${def.unit}${p.source === "simulated" ? " (symulacja)" : ""}`}</title>
+              <title>{`${shortDate(p.t)}: ${fmt(p.value, def.digits)}${def.unit}${p.source === "simulated" ? " (simulated)" : ""}`}</title>
             </circle>
             <text x={x(i)} y={H - 8} className="axis" textAnchor="middle">{shortDate(p.t)}</text>
           </g>
@@ -102,7 +102,7 @@ export function HourCard({ hours }: { hours: { hour: number; value: number; n: n
   const hi = Math.max(...hours.map((h) => h.value));
   return (
     <GlassPanel as="article" className="hour-card">
-      <CardHeader caption="PORA DNIA" title="Tętno spoczynkowe w ciągu dnia" />
+      <CardHeader caption="TIME OF DAY" title="Resting heart rate through the day" />
       <div className="hour-bars">
         {hours.map((h) => (
           <div key={h.hour} className="hour-bar">
@@ -119,19 +119,22 @@ export function HourCard({ hours }: { hours: { hour: number; value: number; n: n
 // ------------------------------------------------------------------ fitness
 
 const COMPONENT_LABELS: Record<string, string> = {
-  hr_rest_bpm: "Tętno spoczynkowe",
-  activity_score: "Aktywność (ankieta)",
+  hr_rest_bpm: "Resting heart rate",
+  activity_score: "Activity (survey)",
+  // `missing` uses shorter keys than `components` (backend /fitness).
+  hr_rest: "Resting heart rate",
+  activity: "Activity (survey)",
   bmi: "BMI",
-  age: "Wiek",
-  sex: "Płeć",
+  age: "Age",
+  sex: "Sex",
 };
 
 export function FitnessCard({ fitness }: { fitness: Fitness }) {
   return (
     <GlassPanel as="article" className="fitness-card">
       <CardHeader
-        caption="WYDOLNOŚĆ"
-        title="Forma (CRF)"
+        caption="FITNESS"
+        title="Fitness (CRF)"
         aside={
           <div className="chart-score">
             <strong>{fmt(fitness.crf_mets, 1)} MET</strong>
@@ -150,14 +153,14 @@ export function FitnessCard({ fitness }: { fitness: Fitness }) {
         {fitness.hr_recovery && (
           <li>
             <span>
-              Powrót tętna <span className="sim-tag" title={fitness.hr_recovery.note}>SYM</span>
+              Heart rate recovery <span className="sim-tag" title={fitness.hr_recovery.note}>SYM</span>
             </span>
             <b>{fitness.hr_recovery.drop_1min_bpm} bpm / min</b>
           </li>
         )}
       </ul>
       {fitness.missing.length > 0 && (
-        <p className="empty-note">Brakuje danych do dokładniejszego wyniku: {fitness.missing.map((m) => COMPONENT_LABELS[m] ?? m).join(", ")}.</p>
+        <p className="empty-note">Missing data for a more accurate result: {fitness.missing.map((m) => COMPONENT_LABELS[m] ?? m).join(", ")}.</p>
       )}
     </GlassPanel>
   );
@@ -170,8 +173,8 @@ export function SessionSummaryCard({ summary, ratingText }: { summary: Summary |
   return (
     <GlassPanel as="article" className="summary-card">
       <CardHeader
-        caption={`OSTATNIA SESJA${summary ? ` • ${formatDuration(Math.round(summary.duration_s))}` : ""}`}
-        title="Podsumowanie sesji"
+        caption={`LAST SESSION${summary ? ` • ${formatDuration(Math.round(summary.duration_s))}` : ""}`}
+        title="Session summary"
         aside={
           ratingText && (
             <span className="good-badge">
@@ -188,7 +191,7 @@ export function SessionSummaryCard({ summary, ratingText }: { summary: Summary |
             <strong>{bar.value}%</strong>
           </div>
         ))}
-        {!bars.length && <p className="empty-note">Brak zakończonej sesji z wynikami.</p>}
+        {!bars.length && <p className="empty-note">No finished session with results yet.</p>}
       </div>
     </GlassPanel>
   );

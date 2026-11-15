@@ -1,19 +1,19 @@
 import { Modal } from "@/components/ui/Modal";
 import type { Exercise, User } from "@/api/types";
 
-/** Ćwiczenia, których nie ma w nagraniach danego zbioru (sesja przełącza się wtedy na symulację). */
+/** Exercises missing from a dataset's recordings (the session then falls back to the simulator). */
 const NOT_RECORDED: Record<string, string[]> = {
   supine: ["resonance_breathing", "short_holds", "hr_recovery"],
   dot: ["hr_recovery"],
 };
 
-/** Czy sesja tego ćwiczenia pokaże prawdziwe nagranie fNIRS, czy symulację. */
+/** Whether a session of this exercise will play a real fNIRS recording or the simulator. */
 function dataSource(user: User | undefined, exercise: Exercise): { real: boolean; text: string } {
   const dataset = user?.is_demo ? user.persona_source?.split("/")[0] : undefined;
-  if (!dataset) return { real: false, text: "Symulacja" };
+  if (!dataset) return { real: false, text: "Simulation" };
   if (NOT_RECORDED[dataset]?.includes(exercise.id))
-    return { real: false, text: "Symulacja – brak w nagraniach" };
-  return { real: true, text: "Prawdziwe nagranie" };
+    return { real: false, text: "Simulation – not in the recordings" };
+  return { real: true, text: "Real recording" };
 }
 
 export function ActivityModal({
@@ -33,11 +33,11 @@ export function ActivityModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="Wybierz aktywność"
-      description="Każdy tryb dostosowuje rytm oddechu i analizę fNIRS."
+      title="Choose an activity"
+      description="Each mode sets its own breathing rhythm and fNIRS analysis."
     >
       <div className="activity-choices">
-        {exercises.length === 0 && <p>Nie udało się pobrać listy ćwiczeń z backendu.</p>}
+        {exercises.length === 0 && <p>Could not load the exercise list from the backend.</p>}
         {exercises.map((exercise) => {
           const src = dataSource(user, exercise);
           return (

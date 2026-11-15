@@ -38,7 +38,7 @@ export function Button({
 }
 
 /** Text-only "back" link used in screen headers. */
-export function BackButton({ onClick, label = "Wróć" }: { onClick: () => void; label?: string }) {
+export function BackButton({ onClick, label = "Back" }: { onClick: () => void; label?: string }) {
   return (
     <Button variant="ghost" icon="arrow" onClick={onClick}>
       {label}

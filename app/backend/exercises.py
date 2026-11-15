@@ -45,22 +45,22 @@ def plan_duration(segs: list[Segment]) -> float:
 BASELINES = ("baseline_pre", "baseline_post")
 
 CATALOG = [
-    dict(id="resonance_breathing", title="Oddech rezonansowy 6/min",
-         description="Wdech 4,5 s, wydech 5,5 s. Trzy serie po 5 oddechów z przerwami 60 s.",
-         measures=[dict(name="phase_lock", label="zgodność z rytmem", source="real"),
-                   dict(name="resonance_score", label="rezonans", source="real"),
-                   dict(name="hr_bpm", label="tętno", source="real"),
+    dict(id="resonance_breathing", title="Resonance breathing 6/min",
+         description="Inhale 4.5 s, exhale 5.5 s. Three sets of 5 breaths with 60 s rests.",
+         measures=[dict(name="phase_lock", label="rhythm match", source="real"),
+                   dict(name="resonance_score", label="resonance", source="real"),
+                   dict(name="hr_bpm", label="heart rate", source="real"),
                    dict(name="rmssd_ms", label="HRV", source="real")]),
-    dict(id="short_holds", title="Seria krótkich bezdechów 7 × 10 s",
-         description="30 s spokojnego oddechu, potem 10 s bezdechu. Siedem powtórzeń.",
-         measures=[dict(name="hold_hbo_peak_uM", label="reakcja HbO", source="real")]),
-    dict(id="breath_hold", title="Bezdech maksymalny",
-         description="Wstrzymaj oddech tak długo, jak to komfortowe. Koniec wykrywamy automatycznie.",
-         measures=[dict(name="hold_s", label="czas bezdechu", source="real"),
-                   dict(name="hold_hbo_peak_uM", label="reakcja HbO", source="real")]),
-    dict(id="hr_recovery", title="Powrót tętna po wysiłku",
-         description="Dwie minuty spokoju po wysiłku: jak szybko tętno wraca do normy.",
-         measures=[dict(name="hr_recovery_drop_bpm", label="spadek tętna w 1. minucie", source="simulated")]),
+    dict(id="short_holds", title="Short breath holds 7 × 10 s",
+         description="30 s of calm breathing, then a 10 s breath hold. Seven repetitions.",
+         measures=[dict(name="hold_hbo_peak_uM", label="HbO response", source="real")]),
+    dict(id="breath_hold", title="Maximal breath hold",
+         description="Hold your breath for as long as is comfortable. The end is detected automatically.",
+         measures=[dict(name="hold_s", label="hold time", source="real"),
+                   dict(name="hold_hbo_peak_uM", label="HbO response", source="real")]),
+    dict(id="hr_recovery", title="Heart rate recovery after exercise",
+         description="Two calm minutes after exercise: how fast your heart rate returns to normal.",
+         measures=[dict(name="hr_recovery_drop_bpm", label="heart rate drop in the 1st minute", source="simulated")]),
 ]
 EXERCISE_IDS = tuple(c["id"] for c in CATALOG)
 PHASES = BASELINES + EXERCISE_IDS

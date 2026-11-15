@@ -63,31 +63,31 @@ export function AvatarControls({
     <div className="avatar-controls">
       {showSex && (
         <Segmented
-          label="Płeć"
+          label="Sex"
           options={SEX_OPTIONS}
           value={avatar.sex}
           onChange={(sex) => set({ sex, length: sex === "F" ? "long" : "short" })}
         />
       )}
       <Segmented
-        label="Rodzaj włosów"
+        label="Hair type"
         options={TEXTURE_OPTIONS}
         value={avatar.texture}
         onChange={(texture) => set({ texture })}
       />
       <Segmented
-        label="Długość włosów"
+        label="Hair length"
         options={LENGTH_OPTIONS}
         value={avatar.length}
         onChange={(length) => set({ length })}
         disabled={bald}
       />
       <div className="control-group" aria-disabled={bald}>
-        <span className="control-title">Kolor włosów</span>
+        <span className="control-title">Hair colour</span>
         <div
           className={cx("swatches", bald && "is-disabled")}
           role="radiogroup"
-          aria-label="Kolor włosów"
+          aria-label="Hair colour"
         >
           {HAIR_COLOR_PRESETS.map((preset) => {
             const selected = preset.hex.toLowerCase() === avatar.color.toLowerCase();
@@ -119,9 +119,9 @@ export function AvatarControls({
               value={avatar.color}
               disabled={bald}
               onChange={(event) => set({ color: event.target.value })}
-              aria-label="Własny kolor włosów"
+              aria-label="Custom hair colour"
             />
-            <span>Własny</span>
+            <span>Custom</span>
           </label>
         </div>
       </div>

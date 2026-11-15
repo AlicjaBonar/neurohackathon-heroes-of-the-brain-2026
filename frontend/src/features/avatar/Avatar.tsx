@@ -4,10 +4,10 @@ import type { AvatarConfig } from "./avatarConfig";
 import { armHeight, AvatarScene, type Gesture } from "./avatarScene";
 
 const GESTURES: { id: Gesture; label: string }[] = [
-  { id: "six_seven", label: "Do 67" },
-  { id: "deep_breath", label: "Głęboki oddech" },
+  { id: "six_seven", label: "Do the 67" },
+  { id: "deep_breath", label: "Deep breath" },
   { id: "namaste", label: "Namaste" },
-  { id: "wave", label: "Pomachaj" },
+  { id: "wave", label: "Wave" },
 ];
 
 const BUBBLES = [
@@ -84,7 +84,7 @@ function Avatar3D({
       ref={canvasRef}
       className={cx(interactive && "is-draggable")}
       role="img"
-      aria-label="Awatar 3D"
+      aria-label="3D avatar"
     />
   );
 }
@@ -153,7 +153,7 @@ export function Avatar({
       {overlay && <div className="avatar-overlay">{overlay}</div>}
       {interactive && (
         <div className="avatar-gestures">
-          <small>Przeciągnij, aby obrócić · dwuklik resetuje</small>
+          <small>Drag to rotate · double-click to reset</small>
           <div>
             {GESTURES.map((gesture) => (
               <button

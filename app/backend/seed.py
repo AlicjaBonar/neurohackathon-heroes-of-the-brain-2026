@@ -84,7 +84,7 @@ def seed(conn) -> dict:
                                dict(hr_bpm=round(_num(spb.hr_beats), 1)),
                                dict(resonance=res, phase_lock=lock), [], round(crf, 1) if crf else None,
                                round(_num(spb.good_pct), 1),
-                               "Sesja z nagrania (zbiór DOT). W danych brak pomiaru spoczynkowego po ćwiczeniu.")
+                               "Session from a recording (DOT dataset). The data has no resting measurement after the exercise.")
             rows = [dict(name="hr_bpm", phase="before", value=hr0, source="real"),
                     dict(name="rmssd_ms", phase="before", value=_num(rs.rmssd_ms), source="real"),
                     dict(name="resp_rate_bpm", phase="before", value=_num(rs.resp_rate_bpm), source="real", confidence=0.5),
@@ -108,7 +108,7 @@ def seed(conn) -> dict:
                                 protocol=["short_holds"], started_at=_ts(bh.meas_date, bh.meas_time), is_demo=True)
             summary = _summary(sess_id, "short_holds", None, dict(hr_bpm=round(_num(bh.hr_beats), 1)),
                                None, [dict(kind="short", hbo_rise_uM=round(peak, 3) if peak else None)], None,
-                               round(_num(bh.good_pct), 1), "Seria 7 krótkich bezdechów z nagrania (zbiór DOT).")
+                               round(_num(bh.good_pct), 1), "7 short breath holds from a recording (DOT dataset).")
             repo.finish_session(conn, sess_id, uid, summary,
                                 [dict(name="hold_hbo_peak_uM", phase="exercise", value=peak, source="real"),
                                  dict(name="hr_bpm", phase="exercise", value=_num(bh.hr_beats), source="real")],
@@ -140,7 +140,7 @@ def seed(conn) -> dict:
                             started_at=_ts(bh.meas_date, bh.meas_time), is_demo=True)
         summary = _summary(sess_id, "breath_hold", before, dict(hr_bpm=round(_num(bh.hr_beats), 1)), None,
                            hold_list, round(crf, 1) if crf else None, round(_num(bh.good_pct), 1),
-                           "Bezdechy z nagrania (zbiór supine); czasy ze znaczników.")
+                           "Breath holds from a recording (supine dataset); durations from the markers.")
         rows = [dict(name="hold_hbo_peak_uM", phase="exercise", value=_num(bh.hold_hbo_peak), source="real"),
                 dict(name="crf_mets", phase="session", value=crf, source="real")]
         if len(h):

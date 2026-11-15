@@ -246,27 +246,29 @@ def build_summary(s: LiveSession) -> tuple[dict, list[dict]]:
     ins = []
     if delta and delta.get("hr_bpm") is not None:
         if delta["hr_bpm"] <= -2:
-            txt = f"Po ćwiczeniu tętno spadło o {abs(delta['hr_bpm']):.0f} BPM"
+            txt = f"Your heart rate dropped by {abs(delta['hr_bpm']):.0f} BPM after the exercise"
             if delta.get("rmssd_pct") and delta["rmssd_pct"] > 5:
-                txt += f", a HRV wzrosło o {delta['rmssd_pct']:.0f}%"
-            ins.append(dict(kind="positive", text=txt + " – dobra relaksacja."))
+                txt += f" and HRV rose by {delta['rmssd_pct']:.0f}%"
+            ins.append(dict(kind="positive", text=txt + " – good relaxation."))
         elif delta["hr_bpm"] >= 3:
-            ins.append(dict(kind="info", text=f"Tętno po ćwiczeniu jest wyższe o {delta['hr_bpm']:.0f} BPM. "
-                                              "Daj sobie chwilę spokojnego oddechu."))
+            ins.append(dict(kind="info", text=f"Your heart rate is {delta['hr_bpm']:.0f} BPM higher after the exercise. "
+                                              "Give yourself a moment of calm breathing."))
         else:
-            ins.append(dict(kind="info", text="Tętno przed i po ćwiczeniu jest podobne."))
+            ins.append(dict(kind="info", text="Your heart rate is similar before and after the exercise."))
     if scores.get("phase_lock") is not None:
         pl = scores["phase_lock"]
         ins.append(dict(kind="positive" if pl >= 0.7 else "tip",
-                        text=f"Zgodność z rytmem: {pl * 100:.0f}%." +
-                             ("" if pl >= 0.7 else " Spróbuj płynniej podążać za kulą.")))
+                        text=f"Rhythm match: {pl * 100:.0f}%." +
+                             ("" if pl >= 0.7 else " Try to follow the pacer more smoothly.")))
     if holds:
-        ins.append(dict(kind="info", text=f"Najdłuższy bezdech w tej sesji: {max(h['hold_s'] for h in holds):.0f} s."))
+        ins.append(dict(kind="info", text=f"Longest breath hold in this session: {max(h['hold_s'] for h in holds):.0f} s."))
     if quality["measured_s"] and quality["motion_s"] > 0.2 * quality["measured_s"]:
-        ins.append(dict(kind="tip", text="Sporo ruchu w trakcie pomiaru – wyniki mogą być mniej dokładne."))
-    if src == "real" and after:
-        ins.append(dict(kind="info", text="Dane z prawdziwego nagrania. Pomiar „po” pochodzi z dalszej części "
-                                          "spoczynku sprzed ćwiczenia (w zbiorze brak pomiaru po ćwiczeniu)."))
+        ins.append(dict(kind="tip", text="Quite a lot of movement during the measurement – results may be less accurate."))
+    # Only when the "after" rest really is taken from the pre-exercise recording (resonance breathing
+    # replays the real post-exercise rest at the end of the SPB file: post_from == "exercise_end").
+    if src == "real" and after and getattr(s.src, "post_from", None) == "rest_recording":
+        ins.append(dict(kind="info", text="Data from a real recording. The \"after\" measurement comes from a later part "
+                                          "of the pre-exercise rest (the dataset has no post-exercise rest for this exercise)."))
 
     summary = dict(
         session_id=s.id, exercise=s.exercise, duration_s=round(s.src.t, 1), phases=s.phase_log,

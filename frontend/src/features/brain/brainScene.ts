@@ -144,6 +144,21 @@ export type HoverInfo = { index: number; x: number; y: number } | null;
 type Kernel = { vertex: Uint32Array; channel: Uint16Array; weight: Float32Array };
 
 const SIGMA_MM = 13;
+const PAINT_EVERY_MS = 66;
+/** Raycasting against ~170k triangles is slow: handle at most one pointer move per this many ms. */
+const RAY_EVERY_MS = 80;
+
+/** divergingColor sampled once, so paint() does not call it for every vertex of every frame. */
+const LUT_N = 512;
+const COLOR_LUT = (() => {
+  const lut = new Float32Array(LUT_N * 3);
+  const c = { r: 0, g: 0, b: 0 };
+  for (let i = 0; i < LUT_N; i++) {
+    divergingColor((i / (LUT_N - 1)) * 2 - 1, c);
+    lut.set([c.r, c.g, c.b], i * 3);
+  }
+  return lut;
+})();
 
 export class BrainScene {
   private renderer: THREE.WebGLRenderer;
@@ -163,11 +178,16 @@ export class BrainScene {
   private lastInteract = -1e9;
   private resize: ResizeObserver;
 
-  private prev: (number | null)[] = [];
-  private next: (number | null)[] = [];
+  // Channel values as Float32Array (NaN = no value) so the per-frame blend/paint allocates nothing.
+  private prev = new Float32Array(0);
+  private next = new Float32Array(0);
+  private vals = new Float32Array(0);
+  private nChannels = 0;
   private nextAt = 0;
   private scale = 1;
   private colorsDirty = true;
+  private lastPaint = -1e9;
+  private lastRay = -1e9;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -224,6 +244,7 @@ export class BrainScene {
   /** Builds the channel kernels, markers and the head/optode overlay for a probe. */
   setProbe(probe: Probe) {
     const pairs = probe.pairs;
+    this.nChannels = pairs.length;
     const long = pairs.filter((p) => !p.short);
     // Anchor each channel on the brain surface: nearest vertex to its cortical point.
     const anchors: THREE.Vector3[] = [];
@@ -336,27 +357,37 @@ export class BrainScene {
 
   /** New channel values (already in display units); blends from the current state over ~0.5 s. */
   setValues(values: (number | null)[], scale: number) {
-    this.prev = this.current();
-    this.next = values;
+    const n = Math.max(values.length, this.nChannels);
+    this.blend();                                   // freeze the current blend as the new start
+    const prev = new Float32Array(n).fill(NaN);
+    prev.set(this.vals.subarray(0, Math.min(n, this.vals.length)));
+    const next = new Float32Array(n).fill(NaN);
+    values.forEach((v, i) => {
+      if (v !== null && v !== undefined) next[i] = v;
+    });
+    this.prev = prev;
+    this.next = next;
+    this.vals = new Float32Array(n).fill(NaN);
     this.nextAt = performance.now();
     this.scale = scale || 1;
     this.colorsDirty = true;
   }
 
-  /** Channel values blended between the last two messages. */
-  private current(): (number | null)[] {
+  /** Channel values blended between the last two messages, written into `this.vals`. */
+  private blend() {
+    const { prev, next, vals } = this;
     const t = Math.min(1, (performance.now() - this.nextAt) / 500);
-    return this.next.map((n, i) => {
-      const p = this.prev[i];
-      if (n === null || n === undefined) return null;
-      if (p === null || p === undefined) return n;
-      return p + (n - p) * t;
-    });
+    for (let i = 0; i < next.length; i++) {
+      const n = next[i], p = prev[i];
+      vals[i] = n !== n ? NaN : p !== p ? n : p + (n - p) * t;
+    }
   }
 
   private paint() {
-    const vals = this.current();
-    const c = { r: 0, g: 0, b: 0 };
+    if (!this.vals.length) return;                  // no channel data yet
+    this.blend();
+    const vals = this.vals;
+    const inv = 1 / this.scale;
     for (const h of this.hemis) {
       const k = h.kernel;
       const attr = h.mesh.geometry.attributes.color as THREE.BufferAttribute;
@@ -366,28 +397,30 @@ export class BrainScene {
         attr.needsUpdate = true;
         continue;
       }
+      const { vertex, channel, weight } = k;
+      const n = vertex.length;
       // Accumulate per vertex (entries are grouped by vertex).
       let i = 0;
-      while (i < k.vertex.length) {
-        const vtx = k.vertex[i];
+      while (i < n) {
+        const vtx = vertex[i];
         let sw = 0, swx = 0;
-        while (i < k.vertex.length && k.vertex[i] === vtx) {
-          const x = vals[k.channel[i]];
-          if (x !== null && x !== undefined) {
-            sw += k.weight[i];
-            swx += k.weight[i] * x;
+        do {
+          const x = vals[channel[i]];
+          if (x === x) {                            // not NaN
+            sw += weight[i];
+            swx += weight[i] * x;
           }
           i++;
-        }
+        } while (i < n && vertex[i] === vtx);
         if (sw < 1e-4) continue;
-        const value = swx / sw / this.scale;
+        const value = swx / sw * inv;
         const coverage = 1 - Math.exp(-sw * 3);
-        divergingColor(value, c);
+        const li = (Math.max(-1, Math.min(1, value)) + 1) * (LUT_N - 1) * 0.5 + 0.5 | 0;
         const a = coverage * Math.min(1, Math.abs(value) * 1.6 + 0.2);
         const o = vtx * 3;
-        out[o] += (c.r - out[o]) * a;
-        out[o + 1] += (c.g - out[o + 1]) * a;
-        out[o + 2] += (c.b - out[o + 2]) * a;
+        out[o] += (COLOR_LUT[li * 3] - out[o]) * a;
+        out[o + 1] += (COLOR_LUT[li * 3 + 1] - out[o + 1]) * a;
+        out[o + 2] += (COLOR_LUT[li * 3 + 2] - out[o + 2]) * a;
       }
       attr.needsUpdate = true;
     }
@@ -404,6 +437,9 @@ export class BrainScene {
 
   private handlePointer = (e: PointerEvent) => {
     if (!this.markers) return;
+    const now = performance.now();
+    if (now - this.lastRay < RAY_EVERY_MS) return;
+    this.lastRay = now;
     const r = this.canvas.getBoundingClientRect();
     this.pointer.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
     this.raycaster.setFromCamera(this.pointer, this.camera);
@@ -438,9 +474,11 @@ export class BrainScene {
     const now = performance.now();
     // Idle: sway gently around the frontal view, where the optodes are.
     if (now - this.lastInteract > 2500) this.root.rotation.z = 0.45 * Math.sin(now / 5200);
-    if (this.colorsDirty) {
+    // Repainting ~84k vertices is the expensive part: ~15 Hz is plenty for a 0.5 s blend.
+    if (this.colorsDirty && now - this.lastPaint >= PAINT_EVERY_MS) {
       this.paint();
-      if (now - this.nextAt > 520) this.colorsDirty = false;
+      this.lastPaint = now;
+      if (now - this.nextAt >= 500) this.colorsDirty = false;   // that paint was the fully blended one
     }
     this.controls.update();
     this.renderer.render(this.scene, this.camera);

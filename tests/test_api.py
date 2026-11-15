@@ -177,7 +177,10 @@ def test_replay_dot_resonance_is_real(user):
     s = ls.finish()
     assert s["sources"]["hr"] == "real" and 40 < s["before"]["hr_bpm"] < 110
     assert s["scores"]["resonance"] > 30 and s["scores"]["phase_lock"] is not None
-    assert any("prawdziwego nagrania" in i["text"] for i in s["insights"])
+    # baseline_post is the real rest at the end of the SPB file, so the summary must not claim
+    # that the dataset has no post-exercise measurement.
+    assert s["after_from"] == "exercise_end"
+    assert not any("no post-exercise rest" in i["text"] for i in s["insights"])
 
 
 @needs_data

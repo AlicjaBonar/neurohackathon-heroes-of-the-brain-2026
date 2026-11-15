@@ -18,17 +18,17 @@ export type MetricDef = {
 
 /** The metrics the backend stores per session (docs 7.3), in display order. */
 export const METRICS: MetricDef[] = [
-  { key: "hr_bpm", label: "Tętno spoczynkowe", unit: " bpm", digits: 0, color: "#6366f1", good: "down", note: "pomiar przed ćwiczeniem" },
-  { key: "rmssd_ms", label: "HRV • RMSSD", unit: " ms", digits: 0, color: "#10b981", good: "up", note: "pomiar przed ćwiczeniem" },
-  { key: "resp_rate_bpm", label: "Częstość oddechu", unit: " /min", digits: 1, color: "#00a8c9", good: null, note: "niska pewność pomiaru" },
-  { key: "resonance_score", label: "Rezonans 0,1 Hz", unit: " /100", digits: 0, color: "#a855f7", good: "up", note: "oddech rezonansowy" },
-  { key: "phase_lock", label: "Zgodność z rytmem", unit: "%", digits: 0, color: "#14b8a6", good: "up", scale: 100, note: "oddech vs. tempo 6/min" },
-  { key: "hold_s", label: "Bezdech", unit: " s", digits: 0, color: "#0ea5e9", good: "up", note: "najdłuższy w sesji" },
-  { key: "hold_hbo_peak_uM", label: "Wzrost HbO", unit: " µM", digits: 2, color: "#3b82f6", good: null, note: "reakcja kory w bezdechu" },
-  { key: "relaxation_score", label: "Relaksacja", unit: " /100", digits: 0, color: "#65a30d", good: "up", note: "zmiana tętna, HRV i rezonansu" },
-  { key: "crf_mets", label: "Forma (CRF)", unit: " MET", digits: 1, color: "#0f766e", good: "up", note: "wzór Jurca 2005" },
-  { key: "hr_recovery_drop_bpm", label: "Powrót tętna", unit: " bpm", digits: 0, color: "#c026d3", good: "up", note: "spadek w 1. minucie" },
-  { key: "good_pct", label: "Jakość sygnału", unit: "%", digits: 0, color: "#64748b", good: "up", note: "dobre kanały" },
+  { key: "hr_bpm", label: "Resting heart rate", unit: " bpm", digits: 0, color: "#6366f1", good: "down", note: "measured before the exercise" },
+  { key: "rmssd_ms", label: "HRV • RMSSD", unit: " ms", digits: 0, color: "#10b981", good: "up", note: "measured before the exercise" },
+  { key: "resp_rate_bpm", label: "Breathing rate", unit: " /min", digits: 1, color: "#00a8c9", good: null, note: "low measurement confidence" },
+  { key: "resonance_score", label: "Resonance 0.1 Hz", unit: " /100", digits: 0, color: "#a855f7", good: "up", note: "resonance breathing" },
+  { key: "phase_lock", label: "Rhythm match", unit: "%", digits: 0, color: "#14b8a6", good: "up", scale: 100, note: "breathing vs. the 6/min pace" },
+  { key: "hold_s", label: "Breath hold", unit: " s", digits: 0, color: "#0ea5e9", good: "up", note: "longest in the session" },
+  { key: "hold_hbo_peak_uM", label: "HbO rise", unit: " µM", digits: 2, color: "#3b82f6", good: null, note: "cortical response to the hold" },
+  { key: "relaxation_score", label: "Relaxation", unit: " /100", digits: 0, color: "#65a30d", good: "up", note: "change in heart rate, HRV and resonance" },
+  { key: "crf_mets", label: "Fitness (CRF)", unit: " MET", digits: 1, color: "#0f766e", good: "up", note: "Jurca 2005 formula" },
+  { key: "hr_recovery_drop_bpm", label: "Heart rate recovery", unit: " bpm", digits: 0, color: "#c026d3", good: "up", note: "drop in the 1st minute" },
+  { key: "good_pct", label: "Signal quality", unit: "%", digits: 0, color: "#64748b", good: "up", note: "good channels" },
 ];
 
 export const HISTORY_KEYS = METRICS.map((m) => m.key);
@@ -72,17 +72,17 @@ export const fmt = (value: number | null | undefined, digits = 0) =>
 
 export const signed = (value: number, digits = 0) => `${value > 0 ? "+" : ""}${value.toFixed(digits)}`;
 
-const DATE = new Intl.DateTimeFormat("pl-PL", { day: "2-digit", month: "2-digit" });
+const DATE = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "2-digit" });
 export const shortDate = (iso: string) => DATE.format(new Date(iso));
 
 export function summaryBars(s: Summary) {
   const bars: { label: string; hint?: string; value: number }[] = [];
-  if (s.scores?.relaxation !== undefined) bars.push({ label: "Relaksacja", value: s.scores.relaxation });
-  if (s.scores?.resonance !== undefined) bars.push({ label: "Rezonans", hint: "moc 0,1 Hz", value: s.scores.resonance });
-  if (s.scores?.phase_lock != null) bars.push({ label: "Zgodność z rytmem", value: Math.round(s.scores.phase_lock * 100) });
-  if (s.quality.good_pct != null) bars.push({ label: "Jakość pomiaru", hint: "dobre kanały", value: Math.round(s.quality.good_pct) });
+  if (s.scores?.relaxation !== undefined) bars.push({ label: "Relaxation", value: s.scores.relaxation });
+  if (s.scores?.resonance !== undefined) bars.push({ label: "Resonance", hint: "0.1 Hz power", value: s.scores.resonance });
+  if (s.scores?.phase_lock != null) bars.push({ label: "Rhythm match", value: Math.round(s.scores.phase_lock * 100) });
+  if (s.quality.good_pct != null) bars.push({ label: "Measurement quality", hint: "good channels", value: Math.round(s.quality.good_pct) });
   return bars;
 }
 
 export const ratingOf = (relaxation: number | undefined) =>
-  relaxation === undefined ? null : relaxation >= 60 ? "Bardzo dobra" : relaxation >= 40 ? "Dobra" : "Umiarkowana";
+  relaxation === undefined ? null : relaxation >= 60 ? "Very good" : relaxation >= 40 ? "Good" : "Moderate";

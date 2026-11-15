@@ -52,7 +52,7 @@ def _files():
     try:
         return list_files()
     except Exception as e:      # no data/ folder (the recordings are not in the repo)
-        raise RecordingNotFound("Brak nagrań SNIRF w data/ – użyj źródła 'mock'.") from e
+        raise RecordingNotFound("No SNIRF recordings in data/ – use the 'mock' source.") from e
 
 
 def parse_id(rec_id: str) -> tuple[str, int, int]:
@@ -116,7 +116,7 @@ class Prepared:
             good = long_
         self.channels = [dict(pair=p, status=str(s), sci=round(float(c), 3), distance_mm=round(float(d), 1))
                          for p, s, c, d in zip(rec.pairs, status, sci, dist)]
-        self.good_pct = round(100.0 * (status[long_] == "good").mean(), 1)
+        self.good_pct = round(float(100.0 * (status[long_] == "good").mean()), 1)
         self.sci_median = round(float(np.median(sci[long_])), 3)
 
         hbo, hbr = H.hbo, H.hbr
@@ -246,6 +246,18 @@ def _head3d(labels, lm3, c3) -> dict:
     return dict(units="mm", frame="x: right, y: nose, z: up; origin = midpoint T7-T8",
                 ellipsoid_radii_mm=radii, cortex_depth_mm=CORTEX_DEPTH_MM,
                 points=[dict(label=l, pos3d=[round(float(v), 1) for v in q]) for l, q in zip(labels, pts)])
+
+
+@lru_cache(maxsize=32)
+def probe_for(rec_id: str) -> dict:
+    """Optode geometry of a person's resting recording, without the full signal processing that
+    prepare() does (MNE + NeuroKit, seconds of CPU). The frontend asks for it right after the session
+    is created, while the live stream of the same session is already running."""
+    ds, sub, sess = parse_id(rec_id)
+    p = _path(ds, sub, "RS" if ds == "dot" else "BS", sess if ds == "dot" else 1)
+    if p is None:
+        raise RecordingNotFound(f"No resting recording for {rec_id}")
+    return _probe(load_snirf(p, load_aux=False, load_data=False), p)
 
 
 @lru_cache(maxsize=12)
@@ -548,12 +560,12 @@ class ReplaySource:
         n_sat = sum(c["status"] == "saturated" for c in r.channels)
         n_bad = sum(c["status"] in ("weak", "dark") for c in r.channels)
         if n_sat:
-            warns.append(dict(code="saturation", text=f"Przesterowane kanały: {n_sat} – popraw docisk opaski"))
+            warns.append(dict(code="saturation", text=f"Saturated channels: {n_sat} – adjust the headband"))
         if n_bad:
-            warns.append(dict(code="weak_signal", text=f"Słaby sygnał w {n_bad} kanałach – odgarnij włosy pod czujnikami"))
+            warns.append(dict(code="weak_signal", text=f"Weak signal in {n_bad} channels – move hair away from the sensors"))
         if moving:
-            warns.append(dict(code="motion", text="Za dużo ruchu – usiądź wygodnie i nie ruszaj głową"))
-        return dict(t=round(self.t, 1), ready=r.good_pct >= 70 and not moving, good_pct=r.good_pct,
+            warns.append(dict(code="motion", text="Too much movement – sit comfortably and keep your head still"))
+        return dict(t=round(self.t, 1), ready=bool(r.good_pct >= 70 and not moving), good_pct=r.good_pct,
                     sci_median=r.sci_median, motion_level="medium" if moving else "low",
                     channels=r.channels, warnings=warns)
 

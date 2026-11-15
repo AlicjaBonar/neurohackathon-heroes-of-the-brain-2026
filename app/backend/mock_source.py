@@ -327,12 +327,12 @@ class MockSource:
         n_sat = sum(c["status"] == "saturated" for c in chans)
         n_weak = sum(c["status"] in ("weak", "dark") for c in chans)
         if n_sat:
-            warns.append(dict(code="saturation", text=f"{n_sat} kanał przesterowany – popraw docisk opaski"))
+            warns.append(dict(code="saturation", text=f"Saturated channels: {n_sat} – adjust the headband"))
         if n_weak:
-            warns.append(dict(code="weak_signal", text=f"{n_weak} kanał ma słaby sygnał – odgarnij włosy pod czujnikiem"))
+            warns.append(dict(code="weak_signal", text=f"Weak signal in {n_weak} channels – move hair away from the sensors"))
         moving = self.t - self.last_unstill < 2.0
         if moving:
-            warns.append(dict(code="motion", text="Za dużo ruchu – usiądź wygodnie i nie ruszaj głową"))
+            warns.append(dict(code="motion", text="Too much movement – sit comfortably and keep your head still"))
         good = 100.0 * sum(c["status"] == "good" for c in chans) / len(chans)
         scis = sorted(c["sci"] for c in chans)
         return dict(t=round(self.t, 1), ready=good >= 85 and not moving, good_pct=good,

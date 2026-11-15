@@ -61,15 +61,19 @@ class Recording:
                 .loc[self.pairs])
 
 
-def load_snirf(path: str | Path, load_aux: bool = True) -> Recording:
+def load_snirf(path: str | Path, load_aux: bool = True, load_data: bool = True) -> Recording:
+    """`load_data=False` skips the (large) intensity matrix: `intensity` is then empty (0, n_channels),
+    for callers that only need the channel table, probe geometry, events and metadata."""
     path = Path(path)
     with h5py.File(path, "r") as f:
         nirs = f["nirs"]
         d = nirs["data1"]
-        data = d["dataTimeSeries"][()].astype(np.float64)
+        ts = d["dataTimeSeries"]
+        n_samples = ts.shape[0]
+        data = ts[()].astype(np.float64) if load_data else np.empty((0, ts.shape[1]))
         t = d["time"][()].ravel().astype(np.float64)
-        if t.size == 2 and data.shape[0] > 2:      # [start, step] form
-            t = t[0] + np.arange(data.shape[0]) * t[1]
+        if t.size == 2 and n_samples > 2:          # [start, step] form
+            t = t[0] + np.arange(n_samples) * t[1]
         fs = 1.0 / np.median(np.diff(t))
 
         probe = nirs["probe"]
